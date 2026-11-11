@@ -1,0 +1,9 @@
+# KNM
+.claude/requirements.json
+.knm/
+.claude/
+.project-knm/
+
+node_modules/
+.env
+*.db
