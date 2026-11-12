@@ -1,0 +1,7 @@
+[
+  { "code": "S01", "name": "Sign in", "section": "REQ-275", "type": "flow", "mode": "view", "buttons": ["Sign in"], "fields": [] },
+  { "code": "S02", "name": "Entry box", "section": "REQ-276, REQ-277, REQ-278", "type": "form", "mode": "create", "buttons": ["Review", "Save"], "fields": ["Short entries"] },
+  { "code": "S03", "name": "Saved entries", "section": "REQ-280, REQ-281 (not described in the spec)", "type": "list", "mode": "view", "buttons": ["Edit", "Delete"], "fields": ["Merchant", "Category", "Amount", "Date", "Note"] },
+  { "code": "S04", "name": "Edit entry", "section": "REQ-280", "type": "form", "mode": "edit", "buttons": ["Save change", "Cancel"], "fields": ["Corrected entry"] },
+  { "code": "S05", "name": "Monthly summary", "section": "REQ-279", "type": "report", "mode": "view", "buttons": [], "fields": ["Category", "Total", "Grand total"] }
+]

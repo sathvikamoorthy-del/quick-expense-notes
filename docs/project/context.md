@@ -9,3 +9,4 @@ Roles: User (one per account; a working professional tracking daily spending on 
 | docs/project/source/ | Source documents | final | define-intent |
 | docs/project/intent.md | Project intent | final | define-intent |
 | docs/requirements/ | Requirement documents of the imported features | draft | import-features |
+| docs/mock/ | Walkthroughs: expenses, From short notes to the monthly summary; gaps in apps/expenses/gaps | draft | create-walkthrough |

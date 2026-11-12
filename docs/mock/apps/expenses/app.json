@@ -1,0 +1,14 @@
+{
+  "name": "expenses",
+  "title": "Quick Expense Notes",
+  "spec": "docs/project/context.md",
+  "walkthroughs": [
+    {
+      "id": "note-to-summary",
+      "title": "From short notes to the monthly summary",
+      "description": "Asha signs in, types three lines of short entries, reviews (3 expanded, 1 error), saves, checks the November summary, edits one entry and deletes another; the summary follows each change.",
+      "sequenceFile": "sequences/note-to-summary.json",
+      "seedData": "mock-app/mock-data/seeds/note-to-summary.json"
+    }
+  ]
+}

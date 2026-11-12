@@ -1,0 +1,169 @@
+{
+  "id": "note-to-summary",
+  "title": "From short notes to the monthly summary",
+  "startStep": "open-app",
+  "completionMessage": "Asha noted three expenses in one text box, saved them, saw the November summary, corrected one entry and deleted another. Each time the summary followed the saved entries (grand total {stats.grandTotal}). Open questions are listed in gaps/note-to-summary.md.",
+  "steps": {
+    "open-app": {
+      "user": "asha",
+      "screen": "S01",
+      "proposedAction": "Open the app",
+      "notDefined": "How the user signs in (email and password, Google, another provider), how a new user gets an account, and whether there is sign-out are not defined (REQ-275 open questions).",
+      "performedText": "opened the app and was asked to sign in",
+      "nextStep": "sign-in"
+    },
+    "sign-in": {
+      "user": "asha",
+      "screen": "S01",
+      "proposedAction": "Click Sign in",
+      "actions": {
+        "sign-in": { "performedText": "signed in and reached the entry box", "nextStep": "type-entries" }
+      }
+    },
+    "type-entries": {
+      "user": "asha",
+      "screen": "S02",
+      "proposedAction": "Click Review",
+      "infoPanel": [
+        { "key": "today", "label": "Today" },
+        { "key": "stats.savedCount", "label": "Saved entries (Nov 2026)" }
+      ],
+      "actions": {
+        "review": {
+          "performedText": "asked to review the four typed entries",
+          "stateChange": { "box.stage": { "set": "reviewed" } },
+          "nextStep": "review"
+        }
+      }
+    },
+    "review": {
+      "user": "asha",
+      "screen": "S02",
+      "proposedAction": "Click Save 3 entries",
+      "infoPanel": [{ "key": "stats.savedCount", "label": "Saved entries (Nov 2026)" }],
+      "actions": {
+        "save": {
+          "performedText": "saved the three valid entries; X 100 was not saved and its error stays shown",
+          "stateChange": {
+            "records.r6.saved": { "set": true },
+            "records.r7.saved": { "set": true },
+            "records.r8.saved": { "set": true },
+            "box.stage": { "set": "saved" },
+            "stats.savedCount": 3,
+            "stats.grandTotal": { "set": "6138.50" }
+          },
+          "nextStep": "after-save"
+        }
+      }
+    },
+    "after-save": {
+      "user": "asha",
+      "screen": "S02",
+      "proposedAction": "Read the save result",
+      "notDefined": "What happens to the text box after saving (cleared, or failed lines kept for fixing), and whether saving the same text twice creates duplicates, are not defined (REQ-278 open questions).",
+      "performedText": "saw 3 saved and 1 not saved",
+      "nextStep": "saved-result"
+    },
+    "saved-result": {
+      "user": "asha",
+      "screen": "S02",
+      "proposedAction": "Click See the November summary",
+      "infoPanel": [{ "key": "stats.savedCount", "label": "Saved entries (Nov 2026)" }],
+      "actions": {
+        "open-summary": { "performedText": "opened the November summary", "nextStep": "summary" }
+      }
+    },
+    "summary": {
+      "user": "asha",
+      "screen": "S05",
+      "proposedAction": "Click Open saved entries",
+      "infoPanel": [{ "key": "stats.grandTotal", "label": "Grand total (Nov 2026)" }],
+      "actions": {
+        "open-entries": { "performedText": "opened the saved entries", "nextStep": "entries-gap" }
+      }
+    },
+    "entries-gap": {
+      "user": "asha",
+      "screen": "S03",
+      "proposedAction": "Look at the saved entries",
+      "notDefined": "The spec describes no list of saved entries. Edit and delete (REQ-280, REQ-281) need one; its place, columns and order are not defined. The mock shows a plain list.",
+      "performedText": "saw the eight saved entries",
+      "nextStep": "pick-edit"
+    },
+    "pick-edit": {
+      "user": "asha",
+      "screen": "S03",
+      "proposedAction": "Click Edit on the Uber entry",
+      "actions": {
+        "edit-entry": { "performedText": "opened the Uber entry to correct it", "nextStep": "edit-gap" }
+      }
+    },
+    "edit-gap": {
+      "user": "asha",
+      "screen": "S04",
+      "proposedAction": "Look at the edit form",
+      "notDefined": "Whether an entry is edited by re-typing the short form or field by field, and whether the abbreviation rules and errors apply to edits, are not defined (REQ-280 open questions). The mock shows the short form.",
+      "performedText": "saw the entry as saved now",
+      "nextStep": "edit"
+    },
+    "edit": {
+      "user": "asha",
+      "screen": "S04",
+      "proposedAction": "Click Save change",
+      "infoPanel": [{ "key": "edit.newTyped", "label": "Corrected entry" }],
+      "actions": {
+        "save-edit": {
+          "performedText": "corrected the Uber amount from 180.00 to 220.00",
+          "stateChange": {
+            "records.r8.amount": { "copy": "edit.newAmount" },
+            "records.r8.typed": { "copy": "edit.newTyped" },
+            "stats.grandTotal": { "set": "6178.50" }
+          },
+          "nextStep": "pick-delete"
+        }
+      }
+    },
+    "pick-delete": {
+      "user": "asha",
+      "screen": "S03",
+      "proposedAction": "Click Delete on the Netflix entry",
+      "infoPanel": [{ "key": "stats.savedCount", "label": "Saved entries (Nov 2026)" }],
+      "actions": {
+        "delete-entry": {
+          "performedText": "deleted the Netflix entry",
+          "stateChange": {
+            "records.r2.deleted": { "set": true },
+            "stats.savedCount": -1,
+            "stats.grandTotal": { "set": "5529.50" }
+          },
+          "nextStep": "deleted"
+        }
+      }
+    },
+    "deleted": {
+      "user": "asha",
+      "screen": "S03",
+      "proposedAction": "Check the list",
+      "notDefined": "Whether the user is asked to confirm a delete, and whether a delete can be undone, are not defined (REQ-281 open questions). The mock deletes at once.",
+      "performedText": "saw seven saved entries",
+      "nextStep": "check-summary"
+    },
+    "check-summary": {
+      "user": "asha",
+      "screen": "S03",
+      "proposedAction": "Click See the November summary",
+      "infoPanel": [{ "key": "stats.savedCount", "label": "Saved entries (Nov 2026)" }],
+      "actions": {
+        "open-summary": { "performedText": "opened the November summary again", "nextStep": "final-summary" }
+      }
+    },
+    "final-summary": {
+      "user": "asha",
+      "screen": "S05",
+      "proposedAction": "Check the totals",
+      "infoPanel": [{ "key": "stats.grandTotal", "label": "Grand total (Nov 2026)" }],
+      "performedText": "saw Travel at 220.00 and Entertainment gone; grand total {stats.grandTotal}",
+      "nextStep": null
+    }
+  }
+}

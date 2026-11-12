@@ -1,0 +1,9 @@
+{
+  "apps": [
+    {
+      "name": "expenses",
+      "title": "Quick Expense Notes",
+      "platform": "desktop"
+    }
+  ]
+}

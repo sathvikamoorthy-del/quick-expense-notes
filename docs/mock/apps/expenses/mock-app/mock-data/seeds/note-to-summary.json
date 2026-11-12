@@ -1,0 +1,28 @@
+{
+  "_sample": "Sample data only. The user name is invented; entries and amounts are the sample entries of docs/project/source/03-sample-entries.md (today = 12 Nov 2026). r1-r5 are assumed saved earlier so the November summary matches the spec sample after the tour saves r6-r8.",
+  "today": "12 Nov 2026",
+  "box": {
+    "stage": "typed",
+    "text": "F 250; SWG 340 yd\nX 100\nUBR 180 12/11 airport",
+    "lines": [
+      { "typed": "F 250", "record": "r6" },
+      { "typed": "SWG 340 yd", "record": "r7" },
+      { "typed": "X 100", "error": "Unknown code \"X\"." },
+      { "typed": "UBR 180 12/11 airport", "record": "r8" }
+    ]
+  },
+  "records": {
+    "r1": { "typed": "R 1.5k", "merchant": "", "category": "Rent", "amount": 1500, "date": "12 Nov 2026", "month": "2026-11", "note": "", "saved": true, "deleted": false },
+    "r2": { "typed": "NFX 649", "merchant": "Netflix", "category": "Entertainment", "amount": 649, "date": "12 Nov 2026", "month": "2026-11", "note": "", "saved": true, "deleted": false },
+    "r3": { "typed": "APL 420 td fever tablets", "merchant": "Apollo Pharmacy", "category": "Health", "amount": 420, "date": "12 Nov 2026", "month": "2026-11", "note": "fever tablets", "saved": true, "deleted": false },
+    "r4": { "typed": "S 2k td shoes", "merchant": "", "category": "Shopping", "amount": 2000, "date": "12 Nov 2026", "month": "2026-11", "note": "shoes", "saved": true, "deleted": false },
+    "r5": { "typed": "AMZ 799.50", "merchant": "Amazon", "category": "Shopping", "amount": 799.5, "date": "12 Nov 2026", "month": "2026-11", "note": "", "saved": true, "deleted": false },
+    "r6": { "typed": "F 250", "merchant": "", "category": "Food", "amount": 250, "date": "12 Nov 2026", "month": "2026-11", "note": "", "saved": false, "deleted": false },
+    "r7": { "typed": "SWG 340 yd", "merchant": "Swiggy", "category": "Food", "amount": 340, "date": "11 Nov 2026", "month": "2026-11", "note": "", "saved": false, "deleted": false },
+    "r8": { "typed": "UBR 180 12/11 airport", "merchant": "Uber", "category": "Travel", "amount": 180, "date": "12 Nov 2026", "month": "2026-11", "note": "airport", "saved": false, "deleted": false }
+  },
+  "summary": { "month": "2026-11", "label": "November 2026" },
+  "tour": { "editId": "r8", "deleteId": "r2" },
+  "edit": { "newTyped": "UBR 220 12/11 airport", "newAmount": 220 },
+  "stats": { "savedCount": 5, "grandTotal": "5368.50" }
+}
