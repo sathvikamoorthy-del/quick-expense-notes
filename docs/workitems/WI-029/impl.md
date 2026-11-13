@@ -41,5 +41,5 @@ The expansion rules live in one place, the API, so that what the user sees is ex
 
 ## Assumptions
 - `X` in `Unknown code "X".` is the code exactly as typed (REQ-276 behaviour).
-- The note keeps its inner spaces as typed. Only leading and trailing spaces and the spaces between fields collapse (REQ-276, as written; confirm at approval).
+- The note keeps its inner spaces as typed. Only leading and trailing spaces and the spaces between fields collapse (REQ-276, approved with this text).
 - The amount is returned both as paise (an integer, matching the DB design's `amount_paise`) and as a 2-decimal display string.
