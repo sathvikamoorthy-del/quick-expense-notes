@@ -80,7 +80,7 @@ Precondition: the web app runs with `API_PROXY_TARGET` pointing at the API, and 
 ## Automated coverage
 | Rows | Automated in | Gap |
 |---|---|---|
-| A, B, C, D | `apps/api/tests/entries/test_expand.py` (parser, today pinned) | `amount_paise` is asserted for A2 and A8 only; the others assert `amount`. Check the rest by hand or extend the test. |
+| A, B, C, D | `apps/api/tests/entries/test_expand.py` (parser, today pinned); `amount_paise` of A1 to A8 in `test_sample_entries_that_work_in_paise` | |
 | A, B through the API | `apps/api/tests/entries/test_routes.py`: one success, one rule error and a category code, with the database built from the migrations | |
 | Code table | `apps/api/tests/entries/test_codes.py`: 16 codes read from the seeded tables | |
 | E1, E3 | `apps/api/tests/entries/test_routes.py` | |
