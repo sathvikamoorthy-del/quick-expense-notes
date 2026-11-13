@@ -1,0 +1,16 @@
+{
+  "complete": true,
+  "missing": [],
+  "values": {
+    "sqlalchemy-db": { "DATABASE_URL": "file:./data/app.db" },
+    "memory-cache": { "CACHE_TTL_SECONDS": "30" },
+    "jwt-auth": { "JWT_SECRET": "<secret: set in env>" }
+  },
+  "record": {
+    "sqlalchemy-db": { "DATABASE_URL": "file:./data/app.db" },
+    "memory-cache": { "CACHE_TTL_SECONDS": "30" },
+    "jwt-auth": { "JWT_SECRET": "<secret: set in env>" }
+  },
+  "envRequired": {},
+  "keyCollisions": []
+}

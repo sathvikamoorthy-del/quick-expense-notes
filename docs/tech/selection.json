@@ -1,0 +1,8 @@
+{
+  "apps": [
+    { "name": "web", "type": "web", "language": "typescript", "framework": "react", "frameworkVersion": "18",
+      "modules": { "frontend-framework": "react-vite", "styling": "chakra-styling", "state-management": "zustand-state", "testing": "jest-react", "api-client": "openapi-client" } },
+    { "name": "api", "type": "api", "language": "python", "framework": "fastapi", "frameworkVersion": "0",
+      "modules": { "backend-framework": "fastapi", "testing": "pytest-testing", "linting": "python-quality", "build-tools": "python-build", "database": "sqlalchemy-db", "auth": "jwt-auth", "server-cache": "memory-cache" } }
+  ]
+}

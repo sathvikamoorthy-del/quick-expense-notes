@@ -1,0 +1,5 @@
+# Tool configuration only (no packaging). Modules (pytest-testing, python-quality) extend it.
+[project]
+name = "api"
+version = "0.0.0"
+requires-python = ">=3.11"

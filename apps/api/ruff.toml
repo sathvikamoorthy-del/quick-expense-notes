@@ -1,0 +1,14 @@
+line-length = 120
+target-version = "py312"
+extend-exclude = [".venv"]
+
+[lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[lint.flake8-bugbear]
+# FastAPI's parameter markers in argument defaults are the framework's idiom, not a bug (B008)
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path", "fastapi.Body", "fastapi.Header", "fastapi.Cookie", "fastapi.Form", "fastapi.File", "fastapi.Security"]
+
+[lint.per-file-ignores]
+# the glue files are scaffold-owned: modules add their imports in the order they are applied
+"app/glue/*.py" = ["I001"]

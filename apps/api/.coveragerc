@@ -1,0 +1,9 @@
+[run]
+omit =
+    app/glue/*
+    app/main.py
+    */__init__.py
+
+[report]
+fail_under = 80
+show_missing = True
