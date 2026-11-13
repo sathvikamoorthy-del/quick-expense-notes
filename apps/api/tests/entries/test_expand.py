@@ -78,6 +78,26 @@ def test_sample_entries_that_work(typed, merchant, category, amount, day, note):
     )
 
 
+# (typed, amount_paise) - the same 8 entries, TC-014 rows A1 to A8
+WORKING_PAISE = [
+    ("F 250", 25000),
+    ("SWG 340 yd", 34000),
+    ("UBR 180 12/11 airport", 18000),
+    ("R 1.5k", 150000),
+    ("NFX 649", 64900),
+    ("APL 420 td fever tablets", 42000),
+    ("S 2k td shoes", 200000),
+    ("AMZ 799.50", 79950),
+]
+
+
+@pytest.mark.parametrize(("typed", "paise"), WORKING_PAISE)
+def test_sample_entries_that_work_in_paise(typed, paise):
+    result = ok(typed)
+    assert result.amount_paise == paise
+    assert isinstance(result.amount_paise, int)
+
+
 @pytest.mark.parametrize(
     ("typed", "message"),
     [
