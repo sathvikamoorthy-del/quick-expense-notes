@@ -1,5 +1,5 @@
 table,pk,important_fields,description,feedback,status
 users,id,"email, display_name","One account per person, signed in by email and password with JWT (REQ-275)",,New
-categories,code,"code, name","Reference: F Food, T Travel, R Rent, U Utilities, S Shopping, H Health, E Entertainment, O Other",,New
-merchants,code,"code, name, category_code","Reference: SWG Swiggy/F, ZMT Zomato/F, UBR Uber/T, OLA Ola/T, AMZ Amazon/S, NFX Netflix/E, APL Apollo Pharmacy/H, BSN BSNL/U",,New
+categories,code,"code, name","Reference: F Food, T Travel, R Rent, U Utilities, S Shopping, H Health, E Entertainment, O Other",,Final
+merchants,code,"code, name, category_code","Reference: SWG Swiggy/F, ZMT Zomato/F, UBR Uber/T, OLA Ola/T, AMZ Amazon/S, NFX Netflix/E, APL Apollo Pharmacy/H, BSN BSNL/U",,Final
 expenses,id,"user_id, category_code, merchant_code, amount_paise, spent_on","A saved, expanded entry (REQ-278, 280, 281); source of the monthly summary (REQ-279). 3NF deviations: typed_text, category_code with merchant",,New

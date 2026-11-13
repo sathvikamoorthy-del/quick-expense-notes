@@ -1,6 +1,7 @@
 line-length = 120
 target-version = "py312"
-extend-exclude = [".venv"]
+# app/models is generated from the DB design (knm-db generate): fix the design or the generator, not the files.
+extend-exclude = [".venv", "app/models"]
 
 [lint]
 select = ["E", "F", "I", "B", "UP"]

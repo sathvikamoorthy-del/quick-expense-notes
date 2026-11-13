@@ -3,6 +3,7 @@
 Intent status: validated 2026-11-11 85ac23f0
 Roles: User (one per account; a working professional tracking daily spending on a laptop)
 Target DB: SQLite 3
+DB design: docs/project/db_design.md
 
 ## Documents
 | Path | What | Status | Added by |
