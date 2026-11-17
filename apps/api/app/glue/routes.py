@@ -2,9 +2,11 @@
 # knm:imports
 
 from app.entries.routes import mount as mount_entries  # app route (WI-029), not a module
+from app.auth.routes import mount as mount_auth  # app route (WI-039), not a module
 
 routes: list[dict[str, object]] = [
     # knm:entries
     # knm:entries-end
     {"id": "entries", "mount": mount_entries},
+    {"id": "auth", "mount": mount_auth},
 ]

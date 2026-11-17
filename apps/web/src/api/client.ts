@@ -7,10 +7,18 @@ let token: string | null = null;
 export const setAuthToken = (value: string | null): void => { token = value; };
 export const getAuthToken = (): string | null => token;
 
+let onUnauthorized: (() => void) | null = null;
+/** Called when a request that carried a token gets 401 (expired or no longer valid): the session signs out (REQ-275). */
+export const setUnauthorizedHandler = (handler: (() => void) | null): void => { onUnauthorized = handler; };
+
 const auth: Middleware = {
   onRequest({ request }) {
     if (token) request.headers.set('Authorization', `Bearer ${token}`);
     return request;
+  },
+  onResponse({ request, response }) {
+    if (response.status === 401 && request.headers.has('Authorization') && onUnauthorized) onUnauthorized();
+    return response;
   }
 };
 

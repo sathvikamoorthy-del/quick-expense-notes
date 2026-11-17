@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/auth/sign-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sign In Route */
+        post: operations["sign_in_route_auth_sign_in_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/entries/expand": {
         parameters: {
             query?: never;
@@ -69,6 +86,33 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /** SignInRequest */
+        SignInRequest: {
+            /** Email */
+            email: string;
+            /** Password */
+            password: string;
+        };
+        /** SignInResponse */
+        SignInResponse: {
+            /**
+             * Expires In
+             * @description Seconds until the token expires (3600).
+             */
+            expires_in: number;
+            /** Token */
+            token: string;
+            user: components["schemas"]["SignedInUser"];
+        };
+        /** SignedInUser */
+        SignedInUser: {
+            /** Display Name */
+            display_name: string;
+            /** Email */
+            email: string;
+            /** Id */
+            id: string;
+        };
         /** ValidationError */
         ValidationError: {
             /** Context */
@@ -91,6 +135,46 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    sign_in_route_auth_sign_in_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignInRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignInResponse"];
+                };
+            };
+            /** @description Invalid email or password. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     expand_entry_entries_expand_post: {
         parameters: {
             query?: never;

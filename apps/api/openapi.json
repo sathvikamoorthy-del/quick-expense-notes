@@ -122,6 +122,72 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "SignInRequest": {
+        "properties": {
+          "email": {
+            "maxLength": 320,
+            "title": "Email",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 1024,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "SignInRequest",
+        "type": "object"
+      },
+      "SignInResponse": {
+        "properties": {
+          "expires_in": {
+            "description": "Seconds until the token expires (3600).",
+            "title": "Expires In",
+            "type": "integer"
+          },
+          "token": {
+            "title": "Token",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/SignedInUser"
+          }
+        },
+        "required": [
+          "token",
+          "expires_in",
+          "user"
+        ],
+        "title": "SignInResponse",
+        "type": "object"
+      },
+      "SignedInUser": {
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "display_name"
+        ],
+        "title": "SignedInUser",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -170,6 +236,50 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/auth/sign-in": {
+      "post": {
+        "operationId": "sign_in_route_auth_sign_in_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignInRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignInResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Invalid email or password."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sign In Route",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/entries/expand": {
       "post": {
         "operationId": "expand_entry_entries_expand_post",
