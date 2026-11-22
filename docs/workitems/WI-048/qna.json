@@ -1,0 +1,85 @@
+{
+  "entity_type": "workItem",
+  "entity_id": "WI-048",
+  "assigned_to": "EackSUlFzsWHlVljpQWgdDETfhs1",
+  "status": "pending",
+  "questions": [
+    {
+      "id": "q1",
+      "type": "yes_no",
+      "text": "Can the user save while some reviewed entries still have errors (the valid ones are saved, the ones with errors are not)?",
+      "reason": "REQ-278 open question. The sample text box suggests yes (3 saved, X 100 not saved, its error stays shown), but REQ-278 asks to confirm. If no, Save stays disabled until every entry is valid.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q2",
+      "type": "single_choice",
+      "text": "After saving, what happens to the text box?",
+      "options": [
+        "Cleared completely",
+        "Keeps only the lines that were not saved (with errors), so the user can fix them",
+        "Left exactly as typed"
+      ],
+      "reason": "REQ-278 open question and walkthrough gap 5. It decides the web behaviour after Save and what the user sees next to the 'N saved, M not saved' result.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q3",
+      "type": "single_choice",
+      "text": "Is a list of the saved entries part of this work item?",
+      "options": [
+        "No: this work item only saves and shows the result ('3 saved, 1 not saved'); the list comes with REQ-280/REQ-281",
+        "Yes: add a plain saved-entries list page (like walkthrough screen S03) in this work item"
+      ],
+      "reason": "REQ-278 open question. The documents describe no list, but edit and delete (REQ-280, REQ-281) need one. Including it adds a GET endpoint and a web page to this work item.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q4",
+      "type": "single_choice",
+      "text": "If the user saves the same text twice, what happens?",
+      "options": [
+        "Duplicate records are created (each Save is a new set of expenses)",
+        "The second Save is refused for entries already saved (please say how a duplicate is recognised in a comment)"
+      ],
+      "reason": "REQ-278 open question and walkthrough gap 7. Two real expenses can be identical (two F 250 lunches on one day), so preventing duplicates needs a rule for what counts as the same entry.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q5",
+      "type": "single_choice",
+      "text": "What exactly is saved when the user presses Save?",
+      "options": [
+        "The API expands the typed text again at save time and saves that result (the server is the only source of truth)",
+        "The API saves the values shown in the review, sent back by the web app, after checking them"
+      ],
+      "reason": "Technical choice. REQ-278 says 'exactly as shown in the review'. With re-expansion, a review made before midnight and saved after it shifts td/yd dates by one day; with saved review values, the API must re-check what the browser sends. Recommendation: re-expand, and refuse the save if any result differs from what was reviewed.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q6",
+      "type": "yes_no",
+      "text": "Is the expenses table in docs/project/db_design.md accepted as designed (status can move from New to Final), so this work item adds its migration?",
+      "reason": "The expenses table is still 'New' in db_design_tables.csv and has no migration (0001-0003 create only categories, merchants and users). Saving needs it. If no, the DB design must be finished first with /knm:create-db-design.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    }
+  ]
+}
