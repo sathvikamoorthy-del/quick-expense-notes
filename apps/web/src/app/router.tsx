@@ -3,6 +3,7 @@
 import { EntryBox } from '../entries/EntryBox'; // app route (WI-029), not a module
 import { RequireAuth } from '../auth/RequireAuth'; // app route guard (WI-039), not a module
 import { SignIn } from '../auth/SignIn'; // app route (WI-039), not a module
+import { MonthlySummary } from '../summary/MonthlySummary'; // app route (WI-049), not a module
 
 export const router = [
   // knm:entries
@@ -10,4 +11,5 @@ export const router = [
   // At /entries, not /: react-vite's contract tests expect / to stay the not-found page (user decision, WI-029).
   { id: 'sign-in', path: '/sign-in', element: <SignIn /> },
   { id: 'entries', path: '/entries', element: <RequireAuth><EntryBox /></RequireAuth> },
+  { id: 'summary', path: '/summary', element: <RequireAuth><MonthlySummary /></RequireAuth> },
 ];

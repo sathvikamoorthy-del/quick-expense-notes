@@ -55,7 +55,11 @@ describe('RequireAuth', () => {
     expect(screen.getByText('Sign in screen')).toBeInTheDocument();
   });
 
-  it('the app routes guard /entries and add /sign-in, leaving / to the not-found page', () => {
-    expect(router.map((r) => r.path)).toEqual(['/sign-in', '/entries']);
+  it('the app routes guard /entries and /summary and add /sign-in, leaving / to the not-found page', () => {
+    expect(router.map((r) => r.path)).toEqual(['/sign-in', '/entries', '/summary']);
+    for (const path of ['/entries', '/summary']) {
+      const route = router.find((r) => r.path === path) as { element: React.ReactElement };
+      expect(route.element.type).toBe(RequireAuth); // WI-049: the summary needs a session like the entry box
+    }
   });
 });

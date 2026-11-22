@@ -54,7 +54,12 @@ class Expanded:
     @property
     def amount(self) -> str:
         """Rupees with 2 decimals, e.g. "340.00"."""
-        return f"{self.amount_paise // 100}.{self.amount_paise % 100:02d}"
+        return format_paise(self.amount_paise)
+
+
+def format_paise(paise: int) -> str:
+    """Integer paise as rupees with 2 decimals: 279950 -> "2799.50" (amounts are never negative)."""
+    return f"{paise // 100}.{paise % 100:02d}"
 
 
 @dataclass(frozen=True)

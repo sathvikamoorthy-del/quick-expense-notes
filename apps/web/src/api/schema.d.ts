@@ -72,10 +72,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Summary */
+        get: operations["summary_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** CategoryTotalModel */
+        CategoryTotalModel: {
+            /**
+             * Category
+             * @description Category name, e.g. Food
+             */
+            category: string;
+            /**
+             * Code
+             * @description Category code, e.g. F
+             */
+            code: string;
+            /**
+             * Total
+             * @description Rupees with 2 decimals, e.g. 590.00
+             */
+            total: string;
+            /** Total Paise */
+            total_paise: number;
+        };
         /** ExpandAllRequest */
         ExpandAllRequest: {
             /**
@@ -221,6 +258,28 @@ export interface components {
             email: string;
             /** Id */
             id: string;
+        };
+        /** SummaryResponse */
+        SummaryResponse: {
+            /**
+             * Categories
+             * @description One total per category with entries, in the fixed category order; empty when the month has none.
+             */
+            categories: components["schemas"]["CategoryTotalModel"][];
+            /**
+             * Current Month
+             * @description The current month in IST, YYYY-MM: the latest month that can be opened.
+             */
+            current_month: string;
+            /** Grand Total */
+            grand_total: string;
+            /** Grand Total Paise */
+            grand_total_paise: number;
+            /**
+             * Month
+             * @description The month shown, YYYY-MM.
+             */
+            month: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -370,6 +429,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SaveResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    summary_summary_get: {
+        parameters: {
+            query?: {
+                /** @description YYYY-MM; the current IST month when left out. */
+                month?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SummaryResponse"];
                 };
             };
             /** @description Validation Error */

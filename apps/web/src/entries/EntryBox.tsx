@@ -3,7 +3,8 @@
 // presses Save. The API splits the text, applies the rules and checks the review again at save time; this component only
 // shows the results.
 import React, { useState } from 'react';
-import { Box, Button, HStack, Table, Tbody, Td, Text, Textarea, Th, Thead, Tr, VStack } from '@chakra-ui/react';
+import { Link as RouterLink } from 'react-router-dom';
+import { Box, Button, HStack, Link, Table, Tbody, Td, Text, Textarea, Th, Thead, Tr, VStack } from '@chakra-ui/react';
 import { api } from '../api/client';
 import { type ApiClient, type ExpandResult, saveEntries, useExpandAll } from './useExpand';
 
@@ -140,6 +141,7 @@ export function EntryBox({ client = api }: { client?: ApiClient }) {
         {review !== null && submitted !== null && <ResultTable results={review} />}
         {result.status === 'success' && result.data && !result.data.ok && <Text role="alert">Error: {result.data.error}</Text>}
       </Box>
+      <Link as={RouterLink} to="/summary" display="inline-block" mt={6}>Monthly summary</Link>
     </Box>
   );
 }

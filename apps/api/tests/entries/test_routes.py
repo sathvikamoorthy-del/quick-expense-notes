@@ -192,3 +192,65 @@ def test_save_missing_empty_or_too_long_is_422(client, body):
     response = client.post("/entries/save", json=body, headers=bearer())
     assert response.status_code == 422
     assert response.json()["error"] == "validation-error"
+
+
+EIGHT = "F 250\nSWG 340 yd\nUBR 180 12/11 airport\nR 1.5k\nNFX 649\nAPL 420 td fever tablets\nS 2k td shoes\nAMZ 799.50"
+
+
+def save_text(client, text: str) -> None:
+    body = client.post(
+        "/entries/save", json={"text": text, "reviewed": reviewed(client, text)}, headers=bearer()
+    ).json()
+    assert body["ok"], body
+
+
+def test_summary_of_the_sample_month(client):
+    save_text(client, EIGHT)
+    response = client.get("/summary", params={"month": "2026-11"}, headers=bearer())
+    assert response.status_code == 200
+    body = response.json()
+    assert [(c["category"], c["total"]) for c in body["categories"]] == [
+        ("Food", "590.00"),
+        ("Travel", "180.00"),
+        ("Rent", "1500.00"),
+        ("Entertainment", "649.00"),
+        ("Health", "420.00"),
+        ("Shopping", "2799.50"),
+    ]
+    assert (body["month"], body["current_month"], body["grand_total"], body["grand_total_paise"]) == (
+        "2026-11",
+        "2026-11",
+        "6138.50",
+        613850,
+    )
+    assert body["categories"][0] == {"code": "F", "category": "Food", "total": "590.00", "total_paise": 59000}
+
+
+def test_summary_defaults_to_the_current_ist_month(client):
+    body = client.get("/summary", headers=bearer()).json()
+    assert (body["month"], body["current_month"], body["categories"], body["grand_total"]) == (
+        "2026-11",
+        "2026-11",
+        [],
+        "0.00",
+    )
+
+
+def test_summary_is_never_cached_and_follows_a_save_at_once(client):
+    first = client.get("/summary", params={"month": "2026-11"}, headers=bearer())
+    assert first.headers["cache-control"] == "no-store"
+    assert first.json()["grand_total"] == "0.00"
+    save_text(client, "F 250")
+    second = client.get("/summary", params={"month": "2026-11"}, headers=bearer())
+    assert second.headers.get("x-cache") is None
+    assert second.json()["grand_total"] == "250.00"
+
+
+@pytest.mark.parametrize("month", ["2026-12", "2027-01", "2026-13", "2026-1", "nov"])
+def test_summary_of_a_future_or_bad_month_is_422(client, month):
+    response = client.get("/summary", params={"month": month}, headers=bearer())
+    assert (response.status_code, response.json()["error"]) == (422, "validation-error")
+
+
+def test_summary_not_signed_in_is_401(client):
+    assert client.get("/summary").status_code == 401

@@ -1,6 +1,37 @@
 {
   "components": {
     "schemas": {
+      "CategoryTotalModel": {
+        "properties": {
+          "category": {
+            "description": "Category name, e.g. Food",
+            "title": "Category",
+            "type": "string"
+          },
+          "code": {
+            "description": "Category code, e.g. F",
+            "title": "Code",
+            "type": "string"
+          },
+          "total": {
+            "description": "Rupees with 2 decimals, e.g. 590.00",
+            "title": "Total",
+            "type": "string"
+          },
+          "total_paise": {
+            "title": "Total Paise",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "category",
+          "total",
+          "total_paise"
+        ],
+        "title": "CategoryTotalModel",
+        "type": "object"
+      },
       "ExpandAllRequest": {
         "properties": {
           "text": {
@@ -348,6 +379,45 @@
         "title": "SignedInUser",
         "type": "object"
       },
+      "SummaryResponse": {
+        "properties": {
+          "categories": {
+            "description": "One total per category with entries, in the fixed category order; empty when the month has none.",
+            "items": {
+              "$ref": "#/components/schemas/CategoryTotalModel"
+            },
+            "title": "Categories",
+            "type": "array"
+          },
+          "current_month": {
+            "description": "The current month in IST, YYYY-MM: the latest month that can be opened.",
+            "title": "Current Month",
+            "type": "string"
+          },
+          "grand_total": {
+            "title": "Grand Total",
+            "type": "string"
+          },
+          "grand_total_paise": {
+            "title": "Grand Total Paise",
+            "type": "integer"
+          },
+          "month": {
+            "description": "The month shown, YYYY-MM.",
+            "title": "Month",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "current_month",
+          "categories",
+          "grand_total",
+          "grand_total_paise"
+        ],
+        "title": "SummaryResponse",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -558,6 +628,57 @@
           }
         },
         "summary": "Save Entries",
+        "tags": [
+          "entries"
+        ]
+      }
+    },
+    "/summary": {
+      "get": {
+        "operationId": "summary_summary_get",
+        "parameters": [
+          {
+            "description": "YYYY-MM; the current IST month when left out.",
+            "in": "query",
+            "name": "month",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "YYYY-MM; the current IST month when left out.",
+              "title": "Month"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SummaryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Summary",
         "tags": [
           "entries"
         ]

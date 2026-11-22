@@ -1,6 +1,7 @@
 """POST /entries/expand: expands one short entry for the signed-in user (REQ-276).
 POST /entries/expand-all: expands every entry of one text box (REQ-277, rules in app.entries.batch).
 POST /entries/save: saves the reviewed entries as the user's expense records (REQ-278, rules in app.entries.save).
+GET /summary: the user's monthly summary by category (REQ-279, rules in app.entries.summary).
 
 A rule error is a normal answer (200, ok=false, the exact message), not an HTTP error: the user typed
 something the rules reject. An empty text is a bad request (422): the rules do not define an empty entry.
@@ -9,7 +10,7 @@ something the rules reject. An empty text is a bad request (422): the rules do n
 from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, FastAPI, HTTPException
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Query, Response
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,8 +20,9 @@ from app.db.session import get_session
 from app.entries.batch import MAX_ENTRIES, EntryResult, TooMany, expand_all, split_entries
 from app.entries.clock import today_ist
 from app.entries.codes import load_codes
-from app.entries.expand import EntryError, Expanded, expand
+from app.entries.expand import EntryError, Expanded, expand, format_paise
 from app.entries.save import Refused, Reviewed, UnknownUser, save_reviewed
+from app.entries.summary import is_future, month_of, monthly_summary, parse_month
 
 router = APIRouter(tags=["entries"])
 
@@ -172,6 +174,52 @@ async def save_entries(
         return SaveResponse(ok=False, error=outcome.message)
     return SaveResponse(
         ok=True, saved=len(outcome.ids), ids=outcome.ids, failed=[_result(item) for item in outcome.failed]
+    )
+
+
+class CategoryTotalModel(BaseModel):
+    code: str = Field(description="Category code, e.g. F")
+    category: str = Field(description="Category name, e.g. Food")
+    total: str = Field(description="Rupees with 2 decimals, e.g. 590.00")
+    total_paise: int
+
+
+class SummaryResponse(BaseModel):
+    month: str = Field(description="The month shown, YYYY-MM.")
+    current_month: str = Field(description="The current month in IST, YYYY-MM: the latest month that can be opened.")
+    categories: list[CategoryTotalModel] = Field(
+        description="One total per category with entries, in the fixed category order; empty when the month has none."
+    )
+    grand_total: str
+    grand_total_paise: int
+
+
+@router.get("/summary", response_model=SummaryResponse)
+async def summary(
+    response: Response,
+    auth: Annotated[AuthClaims, Depends(require_auth)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+    month: Annotated[str | None, Query(description="YYYY-MM; the current IST month when left out.")] = None,
+) -> SummaryResponse:
+    # Totals must equal the saved entries when the summary is opened: never served from the response cache.
+    response.headers["Cache-Control"] = "no-store"
+    today = today_ist()
+    bounds = parse_month(month if month is not None else month_of(today))
+    if bounds is None or is_future(bounds[0], today):
+        raise HTTPException(status_code=422, detail="validation-error")
+    names = {info.category_code: info.category for info in (await load_codes(session)).values()}
+    result = await monthly_summary(session, auth.user_id, bounds[0], bounds[1], names)
+    return SummaryResponse(
+        month=month_of(bounds[0]),
+        current_month=month_of(today),
+        categories=[
+            CategoryTotalModel(
+                code=c.code, category=c.category, total=format_paise(c.total_paise), total_paise=c.total_paise
+            )
+            for c in result.categories
+        ],
+        grand_total=format_paise(result.grand_total_paise),
+        grand_total_paise=result.grand_total_paise,
     )
 
 

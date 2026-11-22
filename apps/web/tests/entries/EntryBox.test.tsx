@@ -192,6 +192,12 @@ describe('EntryBox', () => {
     });
   });
 
+  it('links to the monthly summary (WI-049)', async () => {
+    renderApp(<EntryBox client={answering({ data: {}, response: { status: 200 } }).client} />);
+    await act(async () => undefined); // the hook's first (empty) answer
+    expect(screen.getByRole('link', { name: 'Monthly summary' })).toHaveAttribute('href', '/summary');
+  });
+
   it('formats calendar dates like the mock', () => {
     expect(formatDate('2026-11-05')).toBe('5 Nov 2026');
     expect(formatDate('2026-01-12')).toBe('12 Jan 2026');
