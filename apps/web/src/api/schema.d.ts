@@ -55,6 +55,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/entries/save": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Save Entries */
+        post: operations["save_entries_entries_save_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -138,6 +155,45 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** SaveRequest */
+        SaveRequest: {
+            /**
+             * Reviewed
+             * @description The results of /entries/expand-all that the user reviewed, unchanged.
+             */
+            reviewed: components["schemas"]["ExpandResult"][];
+            /**
+             * Text
+             * @description Several short entries separated by new lines or semicolons.
+             */
+            text: string;
+        };
+        /** SaveResponse */
+        SaveResponse: {
+            /** Error */
+            error?: string | null;
+            /**
+             * Failed
+             * @description The entries not saved, with their errors.
+             */
+            failed?: components["schemas"]["ExpandResult"][];
+            /**
+             * Ids
+             * @description The ids of the saved expense records.
+             */
+            ids?: string[];
+            /**
+             * Ok
+             * @description false when nothing was saved (error says why).
+             */
+            ok: boolean;
+            /**
+             * Saved
+             * @description How many entries were saved as expense records.
+             * @default 0
+             */
+            saved: number;
         };
         /** SignInRequest */
         SignInRequest: {
@@ -281,6 +337,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExpandAllResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_entries_entries_save_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SaveResponse"];
                 };
             };
             /** @description Validation Error */

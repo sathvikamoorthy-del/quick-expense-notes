@@ -34,7 +34,23 @@ export async function expandAll(text: string, client: ApiClient = api): Promise<
   throw new Error(typeof message === 'string' ? message : `request failed (${response.status})`);
 }
 
-/** Like useExpand, for a whole text box. */
-export function useExpandAll(text: string | null, client: ApiClient = api) {
-  return useAsync<ExpandAllResponse | null>(() => (text === null ? Promise.resolve(null) : expandAll(text, client)), [text, client]);
+export type SaveResponse = components['schemas']['SaveResponse'];
+
+/**
+ * Calls POST /entries/save (REQ-278) with the text box and the review the user saw (the `results` of expandAll,
+ * unchanged). The API expands the text again and refuses when it differs; a refusal is data, only a failed request throws.
+ */
+export async function saveEntries(text: string, reviewed: ExpandResult[], client: ApiClient = api): Promise<SaveResponse> {
+  const { data, error, response } = await client.POST('/entries/save', { body: { text, reviewed } });
+  if (data) return data;
+  const message = (error as { error?: unknown } | undefined)?.error;
+  throw new Error(typeof message === 'string' ? message : `request failed (${response.status})`);
+}
+
+/** Like useExpand, for a whole text box. A new `request` number expands the same text again (e.g. after a refused save). */
+export function useExpandAll(text: string | null, client: ApiClient = api, request = 0) {
+  return useAsync<ExpandAllResponse | null>(
+    () => (text === null ? Promise.resolve(null) : expandAll(text, client)),
+    [text, client, request],
+  );
 }

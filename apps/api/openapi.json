@@ -210,6 +210,78 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "SaveRequest": {
+        "properties": {
+          "reviewed": {
+            "description": "The results of /entries/expand-all that the user reviewed, unchanged.",
+            "items": {
+              "$ref": "#/components/schemas/ExpandResult"
+            },
+            "maxItems": 20,
+            "title": "Reviewed",
+            "type": "array"
+          },
+          "text": {
+            "description": "Several short entries separated by new lines or semicolons.",
+            "maxLength": 10500,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "reviewed"
+        ],
+        "title": "SaveRequest",
+        "type": "object"
+      },
+      "SaveResponse": {
+        "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "failed": {
+            "description": "The entries not saved, with their errors.",
+            "items": {
+              "$ref": "#/components/schemas/ExpandResult"
+            },
+            "title": "Failed",
+            "type": "array"
+          },
+          "ids": {
+            "description": "The ids of the saved expense records.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Ids",
+            "type": "array"
+          },
+          "ok": {
+            "description": "false when nothing was saved (error says why).",
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "saved": {
+            "default": 0,
+            "description": "How many entries were saved as expense records.",
+            "title": "Saved",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ok"
+        ],
+        "title": "SaveResponse",
+        "type": "object"
+      },
       "SignInRequest": {
         "properties": {
           "email": {
@@ -445,6 +517,47 @@
           }
         },
         "summary": "Expand All Entries",
+        "tags": [
+          "entries"
+        ]
+      }
+    },
+    "/entries/save": {
+      "post": {
+        "operationId": "save_entries_entries_save_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Entries",
         "tags": [
           "entries"
         ]

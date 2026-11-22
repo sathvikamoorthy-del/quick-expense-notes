@@ -16,12 +16,12 @@ async def read_codes(session: AsyncSession) -> dict[str, CodeInfo]:
     """Category codes map to (None, category); merchant codes to (merchant, its category). Keys are upper case."""
     codes: dict[str, CodeInfo] = {}
     for code, name in (await session.execute(select(Categories.code, Categories.name))).all():
-        codes[code.upper()] = CodeInfo(merchant=None, category=name)
-    merchants = select(Merchants.code, Merchants.name, Categories.name).join(
+        codes[code.upper()] = CodeInfo(merchant=None, category=name, category_code=code)
+    merchants = select(Merchants.code, Merchants.name, Categories.name, Categories.code).join(
         Categories, Categories.code == Merchants.category_code
     )
-    for code, merchant, category in (await session.execute(merchants)).all():
-        codes[code.upper()] = CodeInfo(merchant=merchant, category=category)
+    for code, merchant, category, category_code in (await session.execute(merchants)).all():
+        codes[code.upper()] = CodeInfo(merchant=merchant, category=category, category_code=category_code)
     return codes
 
 

@@ -33,10 +33,12 @@ _DAY_MONTH = re.compile(r"(\d{1,2})/(\d{1,2})")
 
 @dataclass(frozen=True)
 class CodeInfo:
-    """What a code stands for: the merchant (None for a category code) and the category name."""
+    """What a code stands for: the merchant (None for a category code), the category name and the category code
+    (the code itself for a category code, the merchant's category for a merchant code; saving stores codes)."""
 
     merchant: str | None
     category: str
+    category_code: str
 
 
 @dataclass(frozen=True)
@@ -44,6 +46,7 @@ class Expanded:
     code: str
     merchant: str | None
     category: str
+    category_code: str
     amount_paise: int
     date: date
     note: str | None
@@ -133,5 +136,11 @@ def expand(text: str, today: date, codes: dict[str, CodeInfo]) -> Expanded | Ent
 
     note = entry[pos:].lstrip() or None
     return Expanded(
-        code=code, merchant=info.merchant, category=info.category, amount_paise=amount, date=spent_on, note=note
+        code=code,
+        merchant=info.merchant,
+        category=info.category,
+        category_code=info.category_code,
+        amount_paise=amount,
+        date=spent_on,
+        note=note,
     )

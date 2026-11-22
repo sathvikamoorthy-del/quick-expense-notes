@@ -1,6 +1,6 @@
 /** @jest-environment node */
 import { createApiClient } from '../../src/api/client';
-import { expandAll, expandEntry } from '../../src/entries/useExpand';
+import { expandAll, expandEntry, saveEntries } from '../../src/entries/useExpand';
 
 type Call = { url: string; method: string; body: unknown };
 const fakeApi = (status: number, body: unknown) => {
@@ -61,5 +61,26 @@ describe('expandAll', () => {
   it('throws the API error code, or the status, when the request fails', async () => {
     await expect(expandAll(text, fakeApi(422, { error: 'validation-error' }).client)).rejects.toThrow('validation-error');
     await expect(expandAll(text, fakeApi(500, {}).client)).rejects.toThrow('request failed (500)');
+  });
+});
+
+describe('saveEntries', () => {
+  const reviewed = [{ typed: 'SWG 340 yd', ok: true, entry, error: null }];
+
+  it('posts the text and the review unchanged and returns the saved count', async () => {
+    const reply = { ok: true, error: null, saved: 1, ids: ['id-1'], failed: [] };
+    const f = fakeApi(200, reply);
+    await expect(saveEntries('SWG 340 yd', reviewed, f.client)).resolves.toEqual(reply);
+    expect(f.calls).toEqual([{ url: 'http://api.test/entries/save', method: 'POST', body: { text: 'SWG 340 yd', reviewed } }]);
+  });
+
+  it('returns a refused save as a normal answer', async () => {
+    const refused = { ok: false, error: 'The entries changed since the review. Press Expand to review them again.', saved: 0, ids: [], failed: [] };
+    await expect(saveEntries('SWG 340 yd', reviewed, fakeApi(200, refused).client)).resolves.toEqual(refused);
+  });
+
+  it('throws the API error code, or the status, when the request fails', async () => {
+    await expect(saveEntries('SWG 340 yd', reviewed, fakeApi(401, { error: 'unauthorized' }).client)).rejects.toThrow('unauthorized');
+    await expect(saveEntries('SWG 340 yd', reviewed, fakeApi(500, {}).client)).rejects.toThrow('request failed (500)');
   });
 });

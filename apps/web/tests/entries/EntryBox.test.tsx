@@ -2,17 +2,22 @@
 // jsdom has no fetch Request class, so the component gets a fake client here; the real client is covered in useExpand.test.ts.
 import React from 'react';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { EntryBox, formatDate } from '../../src/entries/EntryBox';
+import { EntryBox, formatDate, savedMessage } from '../../src/entries/EntryBox';
 import type { ApiClient } from '../../src/entries/useExpand';
 import { renderApp } from '../../src/testing/render';
 
 type Reply = { data?: unknown; error?: unknown; response: { status: number } };
-const fakeClient = (reply: () => Promise<Reply>) => {
+const fakeClient = (reply: (path: string) => Promise<Reply>) => {
   const calls: unknown[] = [];
-  const client = { POST: async (path: string, init: unknown) => { calls.push([path, init]); return reply(); } } as unknown as ApiClient;
+  const client = { POST: async (path: string, init: unknown) => { calls.push([path, init]); return reply(path); } } as unknown as ApiClient;
   return { calls, client };
 };
 const answering = (reply: Reply) => fakeClient(async () => reply);
+/** One reply per path; /entries/save replies are used in turn. */
+const routed = (expandReply: unknown, ...saveReplies: Reply[]) =>
+  fakeClient(async (path) =>
+    path === '/entries/save' ? (saveReplies.shift() as Reply) : { data: expandReply, response: { status: 200 } });
+const saveButton = () => screen.getByRole('button', { name: 'Save' });
 
 function typeText(text: string) {
   fireEvent.change(screen.getByLabelText('Short entries'), { target: { value: text } });
@@ -54,9 +59,10 @@ describe('EntryBox', () => {
     expect(f.calls).toEqual([['/entries/expand-all', { body: { text: SAMPLE } }]]);
   });
 
-  it('does not send anything before Expand is pressed', () => {
+  it('does not send anything before Expand is pressed', async () => {
     const f = answering({ data: SAMPLE_REPLY, response: { status: 200 } });
     renderApp(<EntryBox client={f.client} />);
+    await act(async () => undefined); // the hook's first (empty) answer
     typeText(SAMPLE);
     expect(f.calls).toEqual([]);
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
@@ -88,15 +94,102 @@ describe('EntryBox', () => {
     expect(screen.getByRole('table', { name: 'Expanded entries' })).toHaveTextContent('Error: Amount is missing.');
   });
 
-  it('does not submit a text box with no entries', () => {
+  it('does not submit a text box with no entries', async () => {
     const f = answering({ data: {}, response: { status: 200 } });
     renderApp(<EntryBox client={f.client} />);
+    await act(async () => undefined); // the hook's first (empty) answer
     expect(screen.getByRole('button', { name: 'Expand' })).toBeDisabled();
     for (const blank of ['   ', ' ;\n ;; ', '\n\n']) {
       typeText(blank);
       expect(screen.getByRole('button', { name: 'Expand' })).toBeDisabled();
     }
     expect(f.calls).toEqual([]);
+  });
+
+  describe('saving (REQ-278)', () => {
+    const saved3 = { ok: true, error: null, saved: 3, ids: ['a', 'b', 'c'], failed: [SAMPLE_REPLY.results[2]] };
+
+    it('cannot save before a review, and nothing is posted to /entries/save before Save is pressed', async () => {
+      const f = routed(SAMPLE_REPLY);
+      renderApp(<EntryBox client={f.client} />);
+      typeText(SAMPLE);
+      expect(saveButton()).toBeDisabled();
+      fireEvent.click(screen.getByRole('button', { name: 'Expand' }));
+      await screen.findByRole('table', { name: 'Expanded entries' });
+      expect(saveButton()).toBeEnabled();
+      expect(f.calls.map((c) => (c as unknown[])[0])).toEqual(['/entries/expand-all']);
+    });
+
+    it('saves the valid entries, says how many failed, and keeps only the failed lines in the box', async () => {
+      const f = routed(SAMPLE_REPLY, { data: saved3, response: { status: 200 } });
+      renderApp(<EntryBox client={f.client} />);
+      expand(SAMPLE);
+      await screen.findByRole('table', { name: 'Expanded entries' });
+      fireEvent.click(saveButton());
+      expect(await screen.findByRole('status')).toHaveTextContent('3 entries saved, 1 not saved.');
+      expect(screen.getByText('X 100', { selector: 'span' }).parentElement).toHaveTextContent('X 100: Error: Unknown code "X".');
+      expect(screen.getByLabelText('Short entries')).toHaveValue('X 100');
+      expect(screen.queryByRole('table')).not.toBeInTheDocument();
+      expect(saveButton()).toBeDisabled();
+      expect(f.calls[1]).toEqual(['/entries/save', { body: { text: SAMPLE, reviewed: SAMPLE_REPLY.results } }]);
+    });
+
+    it('clears the box when every entry was saved', async () => {
+      const allValid = { ...SAMPLE_REPLY, results: SAMPLE_REPLY.results.filter((r) => r.ok) };
+      const f = routed(allValid, { data: { ok: true, error: null, saved: 3, ids: ['a', 'b', 'c'], failed: [] }, response: { status: 200 } });
+      renderApp(<EntryBox client={f.client} />);
+      expand('F 250; SWG 340 yd\nUBR 180 12/11 airport');
+      await screen.findByRole('table', { name: 'Expanded entries' });
+      fireEvent.click(saveButton());
+      expect(await screen.findByRole('status')).toHaveTextContent(/^3 entries saved\.$/);
+      expect(screen.getByLabelText('Short entries')).toHaveValue('');
+    });
+
+    it('cannot save once the text changed after the review', async () => {
+      renderApp(<EntryBox client={routed(SAMPLE_REPLY).client} />);
+      expand(SAMPLE);
+      await screen.findByRole('table', { name: 'Expanded entries' });
+      typeText(`${SAMPLE}\nF 10`);
+      expect(saveButton()).toBeDisabled();
+    });
+
+    it('cannot save a review where every entry has an error', async () => {
+      const onlyErrors = { ok: true, error: null, results: [SAMPLE_REPLY.results[2]] };
+      renderApp(<EntryBox client={routed(onlyErrors).client} />);
+      expand('X 100');
+      await screen.findByRole('table', { name: 'Expanded entries' });
+      expect(saveButton()).toBeDisabled();
+    });
+
+    it('shows a refused save and keeps the review, and Expand reviews the same text again', async () => {
+      const refused = { ok: false, error: 'The entries changed since the review. Press Expand to review them again.', saved: 0, ids: [], failed: [] };
+      const f = routed(SAMPLE_REPLY, { data: refused, response: { status: 200 } });
+      renderApp(<EntryBox client={f.client} />);
+      expand(SAMPLE);
+      await screen.findByRole('table', { name: 'Expanded entries' });
+      fireEvent.click(saveButton());
+      expect(await screen.findByRole('alert')).toHaveTextContent('Error: The entries changed since the review. Press Expand to review them again.');
+      expect(screen.getByRole('table', { name: 'Expanded entries' })).toBeInTheDocument();
+      expect(screen.getByLabelText('Short entries')).toHaveValue(SAMPLE);
+      fireEvent.click(screen.getByRole('button', { name: 'Expand' }));
+      await waitFor(() => expect(f.calls.map((c) => (c as unknown[])[0])).toEqual(['/entries/expand-all', '/entries/save', '/entries/expand-all']));
+      await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+    });
+
+    it('shows a failed save request', async () => {
+      const f = routed(SAMPLE_REPLY, { error: { error: 'unauthorized' }, response: { status: 401 } });
+      renderApp(<EntryBox client={f.client} />);
+      expand(SAMPLE);
+      await screen.findByRole('table', { name: 'Expanded entries' });
+      fireEvent.click(saveButton());
+      expect(await screen.findByRole('alert')).toHaveTextContent('Could not save the entries: unauthorized');
+    });
+
+    it('words the saved message', () => {
+      expect(savedMessage(1, 0)).toBe('1 entry saved.');
+      expect(savedMessage(3, 1)).toBe('3 entries saved, 1 not saved.');
+      expect(savedMessage(0, 2)).toBe('0 entries saved, 2 not saved.');
+    });
   });
 
   it('formats calendar dates like the mock', () => {

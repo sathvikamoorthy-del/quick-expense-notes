@@ -22,22 +22,22 @@ YESTERDAY = date(2026, 11, 11)
 
 # The code tables of docs/project/source/02-abbreviation-rules.md
 CODES = {
-    "F": CodeInfo(None, "Food"),
-    "T": CodeInfo(None, "Travel"),
-    "R": CodeInfo(None, "Rent"),
-    "U": CodeInfo(None, "Utilities"),
-    "S": CodeInfo(None, "Shopping"),
-    "H": CodeInfo(None, "Health"),
-    "E": CodeInfo(None, "Entertainment"),
-    "O": CodeInfo(None, "Other"),
-    "SWG": CodeInfo("Swiggy", "Food"),
-    "ZMT": CodeInfo("Zomato", "Food"),
-    "UBR": CodeInfo("Uber", "Travel"),
-    "OLA": CodeInfo("Ola", "Travel"),
-    "AMZ": CodeInfo("Amazon", "Shopping"),
-    "NFX": CodeInfo("Netflix", "Entertainment"),
-    "APL": CodeInfo("Apollo Pharmacy", "Health"),
-    "BSN": CodeInfo("BSNL", "Utilities"),
+    "F": CodeInfo(None, "Food", "F"),
+    "T": CodeInfo(None, "Travel", "T"),
+    "R": CodeInfo(None, "Rent", "R"),
+    "U": CodeInfo(None, "Utilities", "U"),
+    "S": CodeInfo(None, "Shopping", "S"),
+    "H": CodeInfo(None, "Health", "H"),
+    "E": CodeInfo(None, "Entertainment", "E"),
+    "O": CodeInfo(None, "Other", "O"),
+    "SWG": CodeInfo("Swiggy", "Food", "F"),
+    "ZMT": CodeInfo("Zomato", "Food", "F"),
+    "UBR": CodeInfo("Uber", "Travel", "T"),
+    "OLA": CodeInfo("Ola", "Travel", "T"),
+    "AMZ": CodeInfo("Amazon", "Shopping", "S"),
+    "NFX": CodeInfo("Netflix", "Entertainment", "E"),
+    "APL": CodeInfo("Apollo Pharmacy", "Health", "H"),
+    "BSN": CodeInfo("BSNL", "Utilities", "U"),
 }
 
 
