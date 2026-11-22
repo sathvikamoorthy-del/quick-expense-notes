@@ -2,7 +2,7 @@
   "entity_type": "workItem",
   "entity_id": "WI-049",
   "assigned_to": "EackSUlFzsWHlVljpQWgdDETfhs1",
-  "status": "pending",
+  "status": "completed",
   "questions": [
     {
       "id": "q1",
@@ -15,9 +15,10 @@
       ],
       "reason": "REQ-279 open question and walkthrough gap 8. It decides the page controls; the API takes a month either way (e.g. GET /summary?month=2026-11).",
       "required": true,
-      "answer": null,
-      "answered_by": null,
-      "answered_at": null
+      "answer": "Previous / Next month buttons around the month name",
+      "answered_by": "EackSUlFzsWHlVljpQWgdDETfhs1",
+      "answered_at": "2026-11-22T11:18:33.000Z",
+      "other": null
     },
     {
       "id": "q2",
@@ -29,9 +30,10 @@
       ],
       "reason": "REQ-279 open question. 'Today' is reckoned in IST everywhere else (REQ-276), so the current month would be too.",
       "required": true,
-      "answer": null,
-      "answered_by": null,
-      "answered_at": null
+      "answer": "The current month (in IST, like 'today' in REQ-276)",
+      "answered_by": "EackSUlFzsWHlVljpQWgdDETfhs1",
+      "answered_at": "2026-11-22T11:18:33.000Z",
+      "other": null
     },
     {
       "id": "q3",
@@ -39,9 +41,10 @@
       "text": "What is shown for a month with no saved entries? Please give the exact text (e.g. \"No entries in November 2026.\") and say whether a grand total of 0.00 is shown too.",
       "reason": "REQ-279 open question. Not described in the documents.",
       "required": true,
-      "answer": null,
-      "answered_by": null,
-      "answered_at": null
+      "answer": "No expenses in this month. No grand total is shown.",
+      "answered_by": "EackSUlFzsWHlVljpQWgdDETfhs1",
+      "answered_at": "2026-11-22T11:18:33.000Z",
+      "other": null
     },
     {
       "id": "q4",
@@ -55,9 +58,10 @@
       ],
       "reason": "REQ-279 open question and walkthrough gap 9. The sample order matches none of the usual rules; the acceptance table shows it, so the first option keeps the sample exactly as written.",
       "required": true,
-      "answer": null,
-      "answered_by": null,
-      "answered_at": null
+      "answer": "Fixed order of the sample, then the rest: Food, Travel, Rent, Entertainment, Health, Shopping, Utilities, Other",
+      "answered_by": "EackSUlFzsWHlVljpQWgdDETfhs1",
+      "answered_at": "2026-11-22T11:18:33.000Z",
+      "other": null
     },
     {
       "id": "q5",
@@ -69,9 +73,10 @@
       ],
       "reason": "Entries cannot be dated in the future (REQ-276), so a future month is always empty. This decides whether Next is disabled at the current month.",
       "required": true,
-      "answer": null,
-      "answered_by": null,
-      "answered_at": null
+      "answer": "No: the latest month is the current month (no future dates can be saved)",
+      "answered_by": "EackSUlFzsWHlVljpQWgdDETfhs1",
+      "answered_at": "2026-11-22T11:18:33.000Z",
+      "other": null
     },
     {
       "id": "q6",
@@ -84,9 +89,10 @@
       ],
       "reason": "The app has only /sign-in and /entries, with no navigation. The walkthrough used a tab bar (Enter, Entries, Summary), but a saved-entries list is not built yet (REQ-280/281). '/' must stay the not-found page (WI-029).",
       "required": true,
-      "answer": null,
-      "answered_by": null,
-      "answered_at": null
+      "answer": "A page at /summary with links between it and the entry box (/entries)",
+      "answered_by": "EackSUlFzsWHlVljpQWgdDETfhs1",
+      "answered_at": "2026-11-22T11:18:33.000Z",
+      "other": null
     }
   ]
 }
