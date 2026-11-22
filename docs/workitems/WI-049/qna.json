@@ -1,0 +1,92 @@
+{
+  "entity_type": "workItem",
+  "entity_id": "WI-049",
+  "assigned_to": "EackSUlFzsWHlVljpQWgdDETfhs1",
+  "status": "pending",
+  "questions": [
+    {
+      "id": "q1",
+      "type": "single_choice",
+      "text": "How does the user pick the month of the summary?",
+      "options": [
+        "Previous / Next month buttons around the month name",
+        "A month picker (month and year)",
+        "Both: Previous / Next buttons and a month picker"
+      ],
+      "reason": "REQ-279 open question and walkthrough gap 8. It decides the page controls; the API takes a month either way (e.g. GET /summary?month=2026-11).",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q2",
+      "type": "single_choice",
+      "text": "Which month is shown when the summary opens?",
+      "options": [
+        "The current month (in IST, like 'today' in REQ-276)",
+        "The month of the most recently dated saved entry"
+      ],
+      "reason": "REQ-279 open question. 'Today' is reckoned in IST everywhere else (REQ-276), so the current month would be too.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q3",
+      "type": "text",
+      "text": "What is shown for a month with no saved entries? Please give the exact text (e.g. \"No entries in November 2026.\") and say whether a grand total of 0.00 is shown too.",
+      "reason": "REQ-279 open question. Not described in the documents.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q4",
+      "type": "single_choice",
+      "text": "In which order are the categories listed?",
+      "options": [
+        "Fixed order of the sample, then the rest: Food, Travel, Rent, Entertainment, Health, Shopping, Utilities, Other",
+        "Code-table order: Food, Travel, Rent, Utilities, Shopping, Health, Entertainment, Other",
+        "Alphabetical",
+        "Highest total first"
+      ],
+      "reason": "REQ-279 open question and walkthrough gap 9. The sample order matches none of the usual rules; the acceptance table shows it, so the first option keeps the sample exactly as written.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q5",
+      "type": "single_choice",
+      "text": "Can the user pick a month in the future?",
+      "options": [
+        "No: the latest month is the current month (no future dates can be saved)",
+        "Yes: any month; future months simply show the no-entries text"
+      ],
+      "reason": "Entries cannot be dated in the future (REQ-276), so a future month is always empty. This decides whether Next is disabled at the current month.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q6",
+      "type": "single_choice",
+      "text": "How does the user reach the summary?",
+      "options": [
+        "A page at /summary with links between it and the entry box (/entries)",
+        "A page at /summary, and after a save the entry box shows a link to the summary of the saved month",
+        "Something else (please describe in a comment)"
+      ],
+      "reason": "The app has only /sign-in and /entries, with no navigation. The walkthrough used a tab bar (Enter, Entries, Summary), but a saved-entries list is not built yet (REQ-280/281). '/' must stay the not-found page (WI-029).",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    }
+  ]
+}
