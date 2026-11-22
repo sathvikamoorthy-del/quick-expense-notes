@@ -1,0 +1,100 @@
+{
+  "entity_type": "workItem",
+  "entity_id": "WI-052",
+  "assigned_to": "EackSUlFzsWHlVljpQWgdDETfhs1",
+  "status": "pending",
+  "questions": [
+    {
+      "id": "q1",
+      "type": "single_choice",
+      "text": "How is a saved entry edited?",
+      "options": [
+        "By re-typing the short form, pre-filled with the saved typed text (e.g. UBR 180 12/11 airport)",
+        "Field by field (merchant, category, amount, date, note)"
+      ],
+      "reason": "REQ-280 open question and walkthrough gap 11. The expenses table keeps typed_text for exactly this pre-fill (db_design). The short form reuses the REQ-276 rules; field by field needs new validation for each field.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q2",
+      "type": "yes_no",
+      "text": "Do the abbreviation rules and their exact error messages apply to an edit, so an invalid edit is refused with the rule's message and the entry stays unchanged?",
+      "reason": "REQ-280 open question; the acceptance criterion says 'to confirm'.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q3",
+      "type": "single_choice",
+      "text": "In an edit, what do td, yd and dd/mm mean?",
+      "options": [
+        "Relative to the day of the edit (today in IST), like a new entry",
+        "Relative to the entry's saved date"
+      ],
+      "reason": "REQ-280 open question. Re-saving 'SWG 340 yd' a week later would move the entry by a week with the first option; to keep the date, the user would type it as dd/mm.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q4",
+      "type": "single_choice",
+      "text": "Which saved entries does the saved-entries list show, and in which order?",
+      "options": [
+        "One month at a time with Previous / Next like the summary (current month first), newest date first",
+        "All entries, newest date first",
+        "One month at a time, oldest date first"
+      ],
+      "reason": "REQ-280 open question 'Where does the user find the entry to edit?' and WI-048 q3 (the list comes with REQ-280/REQ-281). A month view matches the summary; 'all' grows without limit.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q5",
+      "type": "single_choice",
+      "text": "Where is the saved-entries list and how is it reached?",
+      "options": [
+        "A page at /saved-entries, with links from the entry box and the summary",
+        "On the summary page, under the totals of the same month",
+        "Something else (please describe in a comment)"
+      ],
+      "reason": "The app has /entries and /summary. The walkthrough showed a separate list (S03) reached from the summary and a tab. Columns would be: typed, merchant, category, amount, date, note, plus Edit (and Delete with REQ-281).",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q6",
+      "type": "single_choice",
+      "text": "How does the edit itself work, and where does the user land afterwards?",
+      "options": [
+        "Inline in the list: Edit turns the row into a text box with Save and Cancel; after Save the row shows the new values",
+        "A separate edit page; after Save the user goes back to the list"
+      ],
+      "reason": "Walkthrough gaps 11 and 12 (edit form and landing after an edit are not defined).",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q7",
+      "type": "yes_no",
+      "text": "Is an edit saved directly (no review step), with the expanded result shown before confirming only if there is an error?",
+      "reason": "New entries are reviewed before Save (REQ-278). For one corrected entry a separate review step may be unnecessary; if yes, the edit shows the rule error or saves at once and the row shows the new values.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    }
+  ]
+}
