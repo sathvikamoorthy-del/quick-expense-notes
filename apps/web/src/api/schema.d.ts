@@ -38,10 +38,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/entries/expand-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Expand All Entries */
+        post: operations["expand_all_entries_entries_expand_all_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ExpandAllRequest */
+        ExpandAllRequest: {
+            /**
+             * Text
+             * @description Several short entries separated by new lines or semicolons.
+             */
+            text: string;
+        };
+        /** ExpandAllResponse */
+        ExpandAllResponse: {
+            /** Error */
+            error?: string | null;
+            /**
+             * Ok
+             * @description false when the whole text box is rejected (error says why, results is empty).
+             */
+            ok: boolean;
+            /**
+             * Results
+             * @description One result per entry, in typed order.
+             */
+            results?: components["schemas"]["ExpandResult"][];
+        };
         /** ExpandRequest */
         ExpandRequest: {
             /**
@@ -57,6 +97,19 @@ export interface components {
             error?: string | null;
             /** Ok */
             ok: boolean;
+        };
+        /** ExpandResult */
+        ExpandResult: {
+            entry?: components["schemas"]["ExpandedEntry"] | null;
+            /** Error */
+            error?: string | null;
+            /** Ok */
+            ok: boolean;
+            /**
+             * Typed
+             * @description The entry as typed, trimmed.
+             */
+            typed: string;
         };
         /** ExpandedEntry */
         ExpandedEntry: {
@@ -195,6 +248,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExpandResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    expand_all_entries_entries_expand_all_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExpandAllRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpandAllResponse"];
                 };
             };
             /** @description Validation Error */

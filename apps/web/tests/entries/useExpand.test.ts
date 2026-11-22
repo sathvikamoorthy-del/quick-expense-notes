@@ -1,6 +1,6 @@
 /** @jest-environment node */
 import { createApiClient } from '../../src/api/client';
-import { expandEntry } from '../../src/entries/useExpand';
+import { expandAll, expandEntry } from '../../src/entries/useExpand';
 
 type Call = { url: string; method: string; body: unknown };
 const fakeApi = (status: number, body: unknown) => {
@@ -32,5 +32,34 @@ describe('expandEntry', () => {
 
   it('throws the status when the failure has no error code', async () => {
     await expect(expandEntry('F 250', fakeApi(500, {}).client)).rejects.toThrow('request failed (500)');
+  });
+});
+
+describe('expandAll', () => {
+  const text = 'F 250; SWG 340 yd\nX 100';
+  const reply = {
+    ok: true,
+    error: null,
+    results: [
+      { typed: 'F 250', ok: true, entry: { ...entry, code: 'F', merchant: null, amount: '250.00', amount_paise: 25000 }, error: null },
+      { typed: 'SWG 340 yd', ok: true, entry, error: null },
+      { typed: 'X 100', ok: false, entry: null, error: 'Unknown code "X".' },
+    ],
+  };
+
+  it('posts the whole text box unchanged and returns one result per entry', async () => {
+    const f = fakeApi(200, reply);
+    await expect(expandAll(text, f.client)).resolves.toEqual(reply);
+    expect(f.calls).toEqual([{ url: 'http://api.test/entries/expand-all', method: 'POST', body: { text } }]);
+  });
+
+  it('returns a rejected text box as a normal answer', async () => {
+    const rejected = { ok: false, error: 'Too many entries (max 20).', results: [] };
+    await expect(expandAll(text, fakeApi(200, rejected).client)).resolves.toEqual(rejected);
+  });
+
+  it('throws the API error code, or the status, when the request fails', async () => {
+    await expect(expandAll(text, fakeApi(422, { error: 'validation-error' }).client)).rejects.toThrow('validation-error');
+    await expect(expandAll(text, fakeApi(500, {}).client)).rejects.toThrow('request failed (500)');
   });
 });

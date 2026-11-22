@@ -69,3 +69,47 @@ def test_missing_empty_or_too_long_text_is_422(client, body):
     response = client.post("/entries/expand", json=body, headers=bearer())
     assert response.status_code == 422
     assert response.json()["error"] == "validation-error"
+
+
+SAMPLE = "F 250; SWG 340 yd\nX 100\nUBR 180 12/11 airport"
+
+
+def test_expand_all_gives_one_result_per_entry_in_typed_order(client):
+    response = client.post("/entries/expand-all", json={"text": SAMPLE}, headers=bearer())
+    assert response.status_code == 200
+    body = response.json()
+    assert (body["ok"], body["error"]) == (True, None)
+    assert [(r["typed"], r["ok"], r["error"]) for r in body["results"]] == [
+        ("F 250", True, None),
+        ("SWG 340 yd", True, None),
+        ("X 100", False, 'Unknown code "X".'),
+        ("UBR 180 12/11 airport", True, None),
+    ]
+    assert body["results"][0]["entry"] == {
+        "code": "F",
+        "merchant": None,
+        "category": "Food",
+        "amount": "250.00",
+        "amount_paise": 25000,
+        "date": "2026-11-12",
+        "note": None,
+    }
+    assert body["results"][2]["entry"] is None
+    assert body["results"][3]["entry"]["note"] == "airport"
+
+
+def test_expand_all_rejects_more_than_twenty_entries(client):
+    response = client.post("/entries/expand-all", json={"text": "\n".join(["F 1"] * 21)}, headers=bearer())
+    assert response.status_code == 200
+    assert response.json() == {"ok": False, "error": "Too many entries (max 20).", "results": []}
+
+
+def test_expand_all_not_signed_in_is_401(client):
+    assert client.post("/entries/expand-all", json={"text": "F 250"}).status_code == 401
+
+
+@pytest.mark.parametrize("body", [{}, {"text": ""}, {"text": "  \n ; ;; "}, {"text": "F 1;" * 3000}])
+def test_expand_all_missing_empty_or_too_long_text_is_422(client, body):
+    response = client.post("/entries/expand-all", json=body, headers=bearer())
+    assert response.status_code == 422
+    assert response.json()["error"] == "validation-error"
