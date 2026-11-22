@@ -93,7 +93,7 @@ Precondition: the web app runs with `API_PROXY_TARGET` pointing at the API, the 
 ## Automated coverage
 | Rows | Automated in | Gap |
 |---|---|---|
-| A1, A2, A4, A5, B1 to B4, C1 to C6, D1, D2, E3, F1 | `apps/api/tests/entries/test_edit.py` (database built from 0001 to 0004) | E1 and E2 are covered through the routes, E3 in the service. |
+| A1, A2, A4, A5, B1 to B4, C1 to C6, D1, D2, E3, F1 | `apps/api/tests/entries/test_edit.py` (database built from 0001 to 0004) | E1 and E2 with these exact totals (520.00, then 560.00) are not automated: the route test checks the summary after an edit with one entry (220.00). |
 | B5, B6 | `test_edit.py` (`saved_day`), `apps/api/tests/entries/test_expand.py` (reference-day cases) | B5 and B6 are not run end to end as edits. |
 | A1, A3, C1, C7, D1 to D4, E2, F2, F3 through the API | `apps/api/tests/entries/test_routes.py` | |
 | G1 to G8 | `apps/web/tests/saved/SavedEntries.test.tsx`, `useSavedEntries.test.ts`, and the link checks in `EntryBox.test.tsx` and `MonthlySummary.test.tsx` (fake API client) | G3 and G6 against a live API are manual steps. |
