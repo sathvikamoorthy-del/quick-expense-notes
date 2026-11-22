@@ -1,0 +1,60 @@
+{
+  "entity_type": "workItem",
+  "entity_id": "WI-047",
+  "assigned_to": "EackSUlFzsWHlVljpQWgdDETfhs1",
+  "status": "pending",
+  "questions": [
+    {
+      "id": "q1",
+      "type": "single_choice",
+      "text": "How are empty parts of the text box handled (blank lines, ';;', a trailing ';', a part with only spaces)?",
+      "options": [
+        "Ignored silently: no result row",
+        "Reported as an error row (please give the message in a comment)"
+      ],
+      "reason": "REQ-277 open question. The single-entry expander (REQ-276) rejects an empty entry, and the source documents do not say what an empty part between separators means.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q2",
+      "type": "single_choice",
+      "text": "Is there a limit on how many entries one text box can hold?",
+      "options": [
+        "No limit beyond a total text size (e.g. 10,000 characters)",
+        "Yes, a maximum number of entries (give the number and the message in a comment)"
+      ],
+      "reason": "REQ-277 open question. Today the API accepts at most 500 characters for one entry; the request size and the error shown over the limit depend on this.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q3",
+      "type": "single_choice",
+      "text": "When are the expanded results shown?",
+      "options": [
+        "On an explicit action (an Expand/Review button), as today for one entry",
+        "Live while the user types"
+      ],
+      "reason": "REQ-277 open question. The brief says the user 'reviews the expanded entries, then saves them' (REQ-278), but not when the review appears. Live expansion needs debouncing and changes the UI and API call pattern.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q4",
+      "type": "yes_no",
+      "text": "Should the single-entry endpoint POST /entries/expand be replaced by one multi-entry endpoint (a single text in, a list of results out, in typed order)?",
+      "reason": "Technical choice affecting REQ-278 (save) and existing tests. Default if unanswered: add a new list endpoint and keep the single one, with the splitting rule in the API service.",
+      "required": false,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    }
+  ]
+}
