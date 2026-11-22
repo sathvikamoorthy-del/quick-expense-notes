@@ -127,6 +127,6 @@ Run `pytest -q` in apps/api (all tests must pass before commit), plus `npx jest 
 - **Changing `CodeInfo` and `Expanded`:** these are internal types. The response models do not change, and the WI-047 tests must still pass.
 
 ## Assumptions
-- **Messages:** the product owner did not give the exact text for the refused save. The plan uses `The entries changed since the review. Press Expand to review them again.` The saved message follows the q3 example: `N entries saved.`, plus `, M not saved` when some failed.
+- **Messages:** the refused-save text `The entries changed since the review. Press Expand to review them again.` was proposed in this plan and confirmed by the product owner on 22 Nov 2026 (in chat). The saved message follows the q3 example: `N entries saved.`, plus `, M not saved` when some failed.
 - **Stored values:** `typed_text` is the trimmed entry as typed, the same value as `typed` in the review. Codes are stored in upper case (REQ-276).
 - **Saved ids:** the API returns them for later work (REQ-280/281), but the web app does not use them yet.
