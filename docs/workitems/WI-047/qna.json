@@ -2,7 +2,7 @@
   "entity_type": "workItem",
   "entity_id": "WI-047",
   "assigned_to": "EackSUlFzsWHlVljpQWgdDETfhs1",
-  "status": "pending",
+  "status": "completed",
   "questions": [
     {
       "id": "q1",
@@ -14,9 +14,10 @@
       ],
       "reason": "REQ-277 open question. The single-entry expander (REQ-276) rejects an empty entry, and the source documents do not say what an empty part between separators means.",
       "required": true,
-      "answer": null,
-      "answered_by": null,
-      "answered_at": null
+      "answer": "Ignored silently: no result row",
+      "answered_by": "EackSUlFzsWHlVljpQWgdDETfhs1",
+      "answered_at": "2026-11-22T05:40:47.000Z",
+      "other": null
     },
     {
       "id": "q2",
@@ -28,9 +29,10 @@
       ],
       "reason": "REQ-277 open question. Today the API accepts at most 500 characters for one entry; the request size and the error shown over the limit depend on this.",
       "required": true,
-      "answer": null,
-      "answered_by": null,
-      "answered_at": null
+      "answer": "Yes, a maximum number of entries (give the number and the message in a comment)",
+      "answered_by": "EackSUlFzsWHlVljpQWgdDETfhs1",
+      "answered_at": "2026-11-22T05:40:47.000Z",
+      "other": null
     },
     {
       "id": "q3",
@@ -42,9 +44,10 @@
       ],
       "reason": "REQ-277 open question. The brief says the user 'reviews the expanded entries, then saves them' (REQ-278), but not when the review appears. Live expansion needs debouncing and changes the UI and API call pattern.",
       "required": true,
-      "answer": null,
-      "answered_by": null,
-      "answered_at": null
+      "answer": "On an explicit action (an Expand/Review button), as today for one entry",
+      "answered_by": "EackSUlFzsWHlVljpQWgdDETfhs1",
+      "answered_at": "2026-11-22T05:40:47.000Z",
+      "other": null
     },
     {
       "id": "q4",
@@ -52,9 +55,10 @@
       "text": "Should the single-entry endpoint POST /entries/expand be replaced by one multi-entry endpoint (a single text in, a list of results out, in typed order)?",
       "reason": "Technical choice affecting REQ-278 (save) and existing tests. Default if unanswered: add a new list endpoint and keep the single one, with the splitting rule in the API service.",
       "required": false,
-      "answer": null,
-      "answered_by": null,
-      "answered_at": null
+      "answer": "No",
+      "answered_by": "EackSUlFzsWHlVljpQWgdDETfhs1",
+      "answered_at": "2026-11-22T05:40:47.000Z",
+      "other": null
     }
   ]
 }
