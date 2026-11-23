@@ -1,0 +1,112 @@
+{
+  "entity_type": "requirement",
+  "entity_id": "REQ-438",
+  "assigned_to": "EackSUlFzsWHlVljpQWgdDETfhs1",
+  "status": "pending",
+  "questions": [
+    {
+      "id": "q1",
+      "type": "single_choice",
+      "text": "How does the app decide that a line is NOT in code form? Note: `paid 450 to zomato yesterday` also looks like `<code> <amount> [note]`, so by today's rules it gives `Unknown code \"paid\".`",
+      "options": [
+        "Code form = the first word is 1 to 3 letters and the second word is an amount; any other line goes to AI",
+        "The first word is a known code: rules; the first word is not a known code and the line has more than two words: AI; otherwise the unknown-code error",
+        "The user marks a plain-words line (for example by starting it with a character such as `?`)",
+        "A separate box or button for plain-words entries"
+      ],
+      "allowOther": true,
+      "reason": "The narrowed rule depends on this split. Without it, an unknown code could reach the AI, or the sample sentence would fail as an unknown code.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q2",
+      "type": "single_choice",
+      "text": "The AI names a merchant. Which merchants can an AI-read entry have?",
+      "options": [
+        "Only merchants in the merchant table (Zomato becomes ZMT); any other merchant is stored with no merchant, category only",
+        "Only merchants in the table; any other merchant makes the line an error",
+        "Any merchant name, stored as text"
+      ],
+      "allowOther": true,
+      "reason": "The merchant table and the expenses table only hold known merchant codes; storing a free merchant name would change the data design.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q3",
+      "type": "yes_no",
+      "text": "Should an AI-read row be marked in the review table (for example `AI` next to it), so the user knows it was not read by the rules?",
+      "reason": "The review table today shows only rule results; the mark changes the screen.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q4",
+      "type": "single_choice",
+      "text": "Today a save re-expands the text and refuses it if the result changed since the review (REQ-278). AI answers can differ each time. What should Save do for an AI-read line?",
+      "options": [
+        "Save exactly what the review showed, without asking the AI again",
+        "Ask the AI again and refuse the save if the result differs"
+      ],
+      "allowOther": true,
+      "reason": "Asking again could make saves fail at random; not asking again needs an exception to the REQ-278 rule.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q5",
+      "type": "single_choice",
+      "text": "How is a saved AI-read entry edited (REQ-280: the user re-types the short form)?",
+      "options": [
+        "The edit box shows the entry in short code form (e.g. `ZMT 450 11/11 dinner`) and the rules apply",
+        "The edit box shows the sentence and the edit goes to AI again",
+        "AI-read entries cannot be edited, only deleted"
+      ],
+      "allowOther": true,
+      "reason": "The edit flow re-expands the typed text by the rules, which would fail on a sentence.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q6",
+      "type": "long_text",
+      "text": "What may be sent to the Claude API? Proposed: only the typed line, today's date and the category and merchant tables; no user id, name or other entries. Confirm or change.",
+      "reason": "It is the only place the user's data leaves the app.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q7",
+      "type": "text",
+      "text": "Is there a limit on plain-words lines per text box (they still count toward the 20 entries), or per day? If yes, what is it and what message is shown?",
+      "reason": "Each AI line is a paid API call and slower than the rules.",
+      "required": false,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q8",
+      "type": "text",
+      "text": "Exact wording of the message when the AI is unavailable or its answer is not valid.",
+      "reason": "The feature asks for a clear message but does not give the text; the other error messages are fixed in the rules document.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    }
+  ]
+}
