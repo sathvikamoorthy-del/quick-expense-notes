@@ -2,7 +2,7 @@
   "entity_type": "workItem",
   "entity_id": "WI-066",
   "assigned_to": "EackSUlFzsWHlVljpQWgdDETfhs1",
-  "status": "pending",
+  "status": "completed",
   "questions": [
     {
       "id": "q1",
@@ -16,9 +16,10 @@
       "allowOther": true,
       "reason": "The split decides which lines leave the app and which keep today's error messages; the literal answer contradicts acceptance 1.",
       "required": true,
-      "answer": null,
-      "answered_by": null,
-      "answered_at": null
+      "answer": "Code form = the first word is 1 to 3 letters (whatever follows); every other line goes to AI. All of today's errors stay exactly as now.",
+      "answered_by": "EackSUlFzsWHlVljpQWgdDETfhs1",
+      "answered_at": "2026-11-23T16:27:41.000Z",
+      "other": null
     },
     {
       "id": "q2",
@@ -31,9 +32,10 @@
       "allowOther": true,
       "reason": "REQ-438 says the AI result follows the same rules, but the rules only define dates of the current year. It also decides whether the short code form shown when editing (REQ-438 q5, `ZMT 450 20/12`) can express the date.",
       "required": true,
-      "answer": null,
-      "answered_by": null,
-      "answered_at": null
+      "answer": "Same as typed entries: today back to 1 January of the current year; an earlier date is an error for that line",
+      "answered_by": "EackSUlFzsWHlVljpQWgdDETfhs1",
+      "answered_at": "2026-11-23T16:27:41.000Z",
+      "other": null
     }
   ]
 }
