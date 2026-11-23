@@ -1,0 +1,39 @@
+{
+  "entity_type": "workItem",
+  "entity_id": "WI-066",
+  "assigned_to": "EackSUlFzsWHlVljpQWgdDETfhs1",
+  "status": "pending",
+  "questions": [
+    {
+      "id": "q1",
+      "type": "single_choice",
+      "text": "REQ-438 q1 says code form = the first word is 1 to 3 letters AND the second word is an amount; any other line goes to AI. Taken literally, `F` (no amount), `F -50`, `F abc` and `F 100 32/13`-style lines with a bad amount would go to AI instead of giving today's errors (`Amount is missing.`, `Amount must be greater than 0.`), which breaks REQ-438 acceptance 1 and the intent's Success point (sample entries fail exactly as shown). Which rule should be built?",
+      "options": [
+        "Code form = the first word is 1 to 3 letters (whatever follows); every other line goes to AI. All of today's errors stay exactly as now.",
+        "Code form = the first word is 1 to 3 letters and there is no second word, or the second word starts with a digit, `+`, `-` or `.`; every other line goes to AI. `F abc` would then go to AI.",
+        "Exactly as REQ-438 q1 says: `F`, `F -50` and `F abc` go to AI (the intent's Success point and acceptance 1 must then be changed)."
+      ],
+      "allowOther": true,
+      "reason": "The split decides which lines leave the app and which keep today's error messages; the literal answer contradicts acceptance 1.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q2",
+      "type": "single_choice",
+      "text": "Which dates may an AI-read entry have? Typed entries can only reach the current year (`dd/mm` means that day this year).",
+      "options": [
+        "Same as typed entries: today back to 1 January of the current year; an earlier date is an error for that line",
+        "Any past date (e.g. \"last December\" in January); only the future is refused"
+      ],
+      "allowOther": true,
+      "reason": "REQ-438 says the AI result follows the same rules, but the rules only define dates of the current year. It also decides whether the short code form shown when editing (REQ-438 q5, `ZMT 450 20/12`) can express the date.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    }
+  ]
+}
