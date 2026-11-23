@@ -1,0 +1,51 @@
+{
+  "entity_type": "workItem",
+  "entity_id": "WI-061",
+  "assigned_to": "EackSUlFzsWHlVljpQWgdDETfhs1",
+  "status": "pending",
+  "questions": [
+    {
+      "id": "q1",
+      "type": "single_choice",
+      "text": "Is the user asked to confirm before an entry is deleted?",
+      "options": [
+        "Yes: Delete turns the row into a confirmation ('Delete this entry?' with Delete and Cancel) in place",
+        "Yes: a dialog asks to confirm",
+        "No: Delete removes the entry at once"
+      ],
+      "reason": "REQ-281 open question and walkthrough gap 13. If yes, please give the exact confirmation text in a comment if it should differ from 'Delete this entry?'.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q2",
+      "type": "single_choice",
+      "text": "Can a delete be undone?",
+      "options": [
+        "No: a delete is final (the DB design uses hard delete)",
+        "Yes: an Undo link for a short time after deleting (please give the time in a comment)"
+      ],
+      "reason": "REQ-281 open question. db_design.md fixes hard delete (no soft delete), so Undo would mean re-creating the record from what the page still holds, with a new id and created_at; edits made relative to the saved day (WI-052) would then count from the undo day.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    },
+    {
+      "id": "q3",
+      "type": "single_choice",
+      "text": "What does the user see after a delete?",
+      "options": [
+        "The row is gone and a short note says 'Entry deleted.'",
+        "The row is simply gone, no message"
+      ],
+      "reason": "Not described in the documents; the list reloads either way and the summary follows.",
+      "required": true,
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
+    }
+  ]
+}
