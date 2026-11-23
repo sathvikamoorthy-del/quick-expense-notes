@@ -3,6 +3,7 @@ POST /entries/expand-all: expands every entry of one text box (REQ-277, rules in
 POST /entries/save: saves the reviewed entries as the user's expense records (REQ-278, rules in app.entries.save).
 GET /summary: the user's monthly summary by category (REQ-279, rules in app.entries.summary).
 GET /entries, PUT /entries/{id}: the saved-entries list and editing one entry (REQ-280, rules in app.entries.edit).
+DELETE /entries/{id}: deletes one of the user's entries for good (REQ-281, app.entries.edit).
 
 A rule error is a normal answer (200, ok=false, the exact message), not an HTTP error: the user typed
 something the rules reject. An empty text is a bad request (422): the rules do not define an empty entry.
@@ -22,7 +23,7 @@ from app.entries.batch import MAX_ENTRIES, EntryResult, TooMany, expand_all, spl
 from app.entries.clock import today_ist
 from app.entries.codes import load_codes
 from app.entries.edit import Refused as EditRefused
-from app.entries.edit import edit_entry, list_month
+from app.entries.edit import delete_entry, edit_entry, list_month
 from app.entries.expand import CodeInfo, EntryError, Expanded, expand, format_paise
 from app.entries.save import Refused, Reviewed, UnknownUser, save_reviewed
 from app.entries.summary import is_future, month_of, monthly_summary, parse_month
@@ -308,6 +309,17 @@ async def edit_saved_entry(
     if isinstance(outcome, EditRefused):
         return EditResponse(ok=False, error=outcome.message)
     return EditResponse(ok=True, entry=_saved(outcome, codes))
+
+
+@router.delete("/entries/{expense_id}", status_code=204, response_class=Response)
+async def delete_saved_entry(
+    expense_id: str,
+    auth: Annotated[AuthClaims, Depends(require_auth)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> Response:
+    if not await delete_entry(session, auth.user_id, expense_id):  # unknown, or another user's: never says which
+        raise HTTPException(status_code=404, detail="not-found")
+    return Response(status_code=204)
 
 
 def mount(app: FastAPI) -> None:

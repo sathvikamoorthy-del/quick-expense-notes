@@ -347,3 +347,42 @@ def test_the_list_of_a_future_or_bad_month_is_422(client, month):
 def test_the_list_and_edit_need_sign_in(client):
     assert client.get("/entries").status_code == 401
     assert client.put("/entries/x", json={"text": "F 1"}).status_code == 401
+
+
+def test_deleting_an_entry_removes_it_from_the_list_and_the_summary_at_once(client):
+    save_text(client, "F 250\nNFX 649")
+    entries = saved_entries(client)["entries"]
+    netflix = next(e for e in entries if e["code"] == "NFX")
+    assert [c["category"] for c in client.get("/summary", headers=bearer()).json()["categories"]] == [
+        "Food",
+        "Entertainment",
+    ]
+    response = client.delete(f"/entries/{netflix['id']}", headers=bearer())
+    assert (response.status_code, response.content) == (204, b"")
+    assert [e["typed"] for e in saved_entries(client)["entries"]] == ["F 250"]
+    summary = client.get("/summary", headers=bearer()).json()
+    assert ([c["category"] for c in summary["categories"]], summary["grand_total"]) == (["Food"], "250.00")
+    again = client.delete(f"/entries/{netflix['id']}", headers=bearer())
+    assert (again.status_code, again.json()["error"]) == (404, "not-found")
+
+
+def test_deleting_another_users_or_an_unknown_entry_is_404_and_deletes_nothing(client, db_file):
+    save_text(client, "F 250")
+    entry = saved_entries(client)["entries"][0]
+    connection = sqlite3.connect(db_file)
+    try:
+        connection.execute(
+            "INSERT INTO users (id, email, password_hash, display_name) VALUES (?, 'c@example.com', 'x', 'C')",
+            ("33333333-3333-3333-3333-333333333333",),
+        )
+        connection.commit()
+    finally:
+        connection.close()
+    other = bearer("33333333-3333-3333-3333-333333333333")
+    assert client.delete(f"/entries/{entry['id']}", headers=other).status_code == 404
+    assert client.delete("/entries/00000000-0000-0000-0000-000000000000", headers=bearer()).status_code == 404
+    assert saved_entries(client)["entries"] == [entry]
+
+
+def test_deleting_needs_sign_in(client):
+    assert client.delete("/entries/x").status_code == 401

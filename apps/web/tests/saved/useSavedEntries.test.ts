@@ -1,6 +1,6 @@
 /** @jest-environment node */
 import { createApiClient } from '../../src/api/client';
-import { editEntry, fetchSavedEntries } from '../../src/saved/useSavedEntries';
+import { deleteEntry, editEntry, fetchSavedEntries } from '../../src/saved/useSavedEntries';
 
 type Call = { url: string; method: string; body: unknown };
 const fakeApi = (status: number, body: unknown) => {
@@ -60,5 +60,29 @@ describe('editEntry', () => {
   it('throws the API error code, or the status, when the request fails', async () => {
     await expect(editEntry('nope', 'F 1', fakeApi(404, { error: 'not-found' }).client)).rejects.toThrow('not-found');
     await expect(editEntry('nope', 'F 1', fakeApi(500, {}).client)).rejects.toThrow('request failed (500)');
+  });
+});
+
+describe('deleteEntry', () => {
+  const deleting = (status: number, body?: unknown) => {
+    const calls: Call[] = [];
+    const fetchImpl = (async (input: Request) => {
+      calls.push({ url: input.url, method: input.method, body: null });
+      return status === 204
+        ? new Response(null, { status })
+        : new Response(JSON.stringify(body ?? {}), { status, headers: { 'Content-Type': 'application/json' } });
+    }) as unknown as typeof fetch;
+    return { calls, client: createApiClient('http://api.test', fetchImpl) };
+  };
+
+  it('deletes the entry and resolves on 204', async () => {
+    const f = deleting(204);
+    await expect(deleteEntry(entry.id, f.client)).resolves.toBeUndefined();
+    expect(f.calls).toEqual([{ url: `http://api.test/entries/${entry.id}`, method: 'DELETE', body: null }]);
+  });
+
+  it('throws not-found on 404, and the status when there is no error code', async () => {
+    await expect(deleteEntry('nope', deleting(404, { error: 'not-found' }).client)).rejects.toThrow('not-found');
+    await expect(deleteEntry('nope', deleting(500).client)).rejects.toThrow('request failed (500)');
   });
 });

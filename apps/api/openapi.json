@@ -835,6 +835,39 @@
       }
     },
     "/entries/{expense_id}": {
+      "delete": {
+        "operationId": "delete_saved_entry_entries__expense_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "expense_id",
+            "required": true,
+            "schema": {
+              "title": "Expense Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Saved Entry",
+        "tags": [
+          "entries"
+        ]
+      },
       "put": {
         "operationId": "edit_saved_entry_entries__expense_id__put",
         "parameters": [

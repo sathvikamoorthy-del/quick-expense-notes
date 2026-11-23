@@ -100,7 +100,8 @@ export interface paths {
         /** Edit Saved Entry */
         put: operations["edit_saved_entry_entries__expense_id__put"];
         post?: never;
-        delete?: never;
+        /** Delete Saved Entry */
+        delete: operations["delete_saved_entry_entries__expense_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -601,6 +602,35 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["EditResponse"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_saved_entry_entries__expense_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                expense_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from app.db.session import Database
-from app.entries.edit import ONE_ENTRY_ONLY, Refused, edit_entry, list_month, saved_day
+from app.entries.edit import ONE_ENTRY_ONLY, Refused, delete_entry, edit_entry, list_month, saved_day
 from app.entries.summary import monthly_summary, parse_month
 from tests.entries.test_codes import build_seeded_db
 from tests.entries.test_expand import CODES, TODAY
@@ -191,3 +191,44 @@ async def test_the_summary_follows_an_edit_that_moves_the_entry_to_another_month
 )
 def test_the_saved_day_is_the_ist_date_of_created_at(created_at, day):
     assert saved_day(created_at) == day
+
+
+# REQ-281 / WI-061: delete
+
+
+async def delete(database: Database, expense_id: str, user: str = ASHA) -> bool:
+    async with database.sessions() as session:
+        removed = await delete_entry(session, user, expense_id)
+        await session.commit()
+    return removed
+
+
+async def test_a_delete_removes_the_entry_for_good(database, db_file):
+    insert(db_file, [UBR, SWG])
+    assert await delete(database, ident(1)) is True
+    assert stored(db_file, ident(1)) is None
+    start, end = parse_month("2026-11")
+    async with database.sessions() as session:
+        assert [r.id for r in await list_month(session, ASHA, start, end)] == [ident(2)]
+
+
+async def test_another_users_entry_or_an_unknown_id_is_not_deleted(database, db_file):
+    insert(db_file, [UBR], user=RAVI)
+    assert await delete(database, ident(1), user=ASHA) is False
+    assert await delete(database, ident(99), user=ASHA) is False
+    assert stored(db_file, ident(1)) is not None
+
+
+async def test_deleting_the_only_entertainment_entry_removes_it_from_the_summary(database, db_file):
+    netflix = (ident(5), "NFX 649", "NFX", "E", 64900, "2026-11-12", None, SAVED_12_NOV)
+    insert(db_file, [UBR, SWG, netflix])
+    start, end = parse_month("2026-11")
+
+    async def summary() -> tuple[list[str], int]:
+        async with database.sessions() as session:
+            result = await monthly_summary(session, ASHA, start, end, NAMES)
+        return [c.category for c in result.categories], result.grand_total_paise
+
+    assert await summary() == (["Food", "Travel", "Entertainment"], 116900)
+    await delete(database, ident(5))
+    assert await summary() == (["Food", "Travel"], 52000)

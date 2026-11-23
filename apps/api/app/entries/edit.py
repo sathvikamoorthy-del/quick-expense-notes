@@ -1,4 +1,4 @@
-"""The saved-entries list and editing one saved entry (REQ-280, WI-052).
+"""The saved-entries list, editing one saved entry (REQ-280, WI-052) and deleting one (REQ-281, WI-061).
 
 Rules (docs/workitems/WI-052/impl.md, product owner 22 Nov 2026):
 - The list shows the user's entries of one month, newest date first (the newest saved first on the same date).
@@ -11,7 +11,7 @@ Rules (docs/workitems/WI-052/impl.md, product owner 22 Nov 2026):
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.entries.batch import split_entries
@@ -73,3 +73,10 @@ async def edit_entry(
     await session.flush()
     await session.refresh(row)
     return row
+
+
+async def delete_entry(session: AsyncSession, user_id: str, expense_id: str) -> bool:
+    """Removes the user's entry for good (REQ-281: hard delete, no undo). False when the user has no entry with this id,
+    so another user's entry is never touched and never revealed."""
+    result = await session.execute(delete(Expenses).where(Expenses.id == expense_id, Expenses.user_id == user_id))
+    return bool(getattr(result, "rowcount", 0))

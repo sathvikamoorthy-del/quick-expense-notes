@@ -1,5 +1,6 @@
-// The saved-entries list (REQ-280, WI-052): the user's entries of one month, newest date first, each editable in place by
-// re-typing its short form. The API applies the rules (dates count from the day the entry was saved); this page only shows.
+// The saved-entries list (REQ-280, WI-052; REQ-281, WI-061): the user's entries of one month, newest date first, each
+// editable in place by re-typing its short form, or deleted for good after an in-place confirmation. The API applies the
+// rules (dates count from the day the entry was saved); this page only shows.
 import React, { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { Box, Button, Heading, HStack, Input, Link, Table, Tbody, Td, Text, Th, Thead, Tr } from '@chakra-ui/react';
@@ -7,9 +8,31 @@ import { api } from '../api/client';
 import { formatDate } from '../entries/EntryBox';
 import type { ApiClient } from '../entries/useExpand';
 import { monthLabel, shiftMonth } from '../summary/MonthlySummary';
-import { editEntry, type SavedEntry, useSavedEntries } from './useSavedEntries';
+import { deleteEntry, editEntry, type SavedEntry, useSavedEntries } from './useSavedEntries';
 
 type Editing = { id: string; text: string; saving: boolean; error: string | null };
+type Deleting = { id: string; busy: boolean; error: string | null };
+
+function ConfirmDeleteRow({ entry, deleting, onConfirm, onCancel }: {
+  entry: SavedEntry;
+  deleting: Deleting;
+  onConfirm(): void;
+  onCancel(): void;
+}) {
+  return (
+    <Tr>
+      <Td fontFamily="mono">{entry.typed}</Td>
+      <Td colSpan={6}>
+        <HStack>
+          <Text fontWeight="semibold">Delete this entry?</Text>
+          <Button size="sm" colorScheme="red" onClick={onConfirm} isLoading={deleting.busy} loadingText="Deleting">Delete</Button>
+          <Button size="sm" onClick={onCancel} isDisabled={deleting.busy}>Cancel</Button>
+        </HStack>
+        {deleting.error && <Text role="alert" color="red.600" mt={2}>{deleting.error}</Text>}
+      </Td>
+    </Tr>
+  );
+}
 
 function EditRow({ editing, onChange, onSave, onCancel }: {
   editing: Editing;
@@ -43,7 +66,7 @@ function EditRow({ editing, onChange, onSave, onCancel }: {
   );
 }
 
-function EntryRow({ entry, onEdit, canEdit }: { entry: SavedEntry; onEdit(): void; canEdit: boolean }) {
+function EntryRow({ entry, onEdit, onDelete, canEdit }: { entry: SavedEntry; onEdit(): void; onDelete(): void; canEdit: boolean }) {
   return (
     <Tr>
       <Td fontFamily="mono">{entry.typed}</Td>
@@ -52,7 +75,12 @@ function EntryRow({ entry, onEdit, canEdit }: { entry: SavedEntry; onEdit(): voi
       <Td isNumeric>{entry.amount}</Td>
       <Td>{formatDate(entry.date)}</Td>
       <Td>{entry.note ?? ''}</Td>
-      <Td><Button size="sm" onClick={onEdit} isDisabled={!canEdit}>Edit</Button></Td>
+      <Td>
+        <HStack>
+          <Button size="sm" onClick={onEdit} isDisabled={!canEdit}>Edit</Button>
+          <Button size="sm" variant="outline" colorScheme="red" onClick={onDelete} isDisabled={!canEdit}>Delete</Button>
+        </HStack>
+      </Td>
     </Tr>
   );
 }
@@ -60,16 +88,32 @@ function EntryRow({ entry, onEdit, canEdit }: { entry: SavedEntry; onEdit(): voi
 export function SavedEntries({ client = api }: { client?: ApiClient }) {
   const [month, setMonth] = useState<string | null>(null); // null: the current month, as the API sees it
   const [editing, setEditing] = useState<Editing | null>(null);
-  const [moved, setMoved] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<Deleting | null>(null);
+  const [note, setNote] = useState<string | null>(null); // "The entry moved to …" or "Entry deleted."
   const result = useSavedEntries(month, client);
   const data = result.status === 'success' ? result.data : null;
   const shown = data?.month ?? month;
+  const rowOpen = editing !== null || deleting !== null; // one row in edit or confirm mode at a time
 
   const go = (by: number) => {
     if (!shown) return;
     setEditing(null);
-    setMoved(null);
+    setDeleting(null);
+    setNote(null);
     setMonth(shiftMonth(shown, by));
+  };
+
+  const confirmDelete = async () => {
+    if (!deleting || deleting.busy) return;
+    setDeleting({ ...deleting, busy: true, error: null });
+    try {
+      await deleteEntry(deleting.id, client);
+      setDeleting(null);
+      setNote('Entry deleted.');
+      result.reload();
+    } catch (e) {
+      setDeleting({ ...deleting, busy: false, error: `Could not delete the entry: ${e instanceof Error ? e.message : String(e)}` });
+    }
   };
 
   const save = async () => {
@@ -82,7 +126,7 @@ export function SavedEntries({ client = api }: { client?: ApiClient }) {
         return;
       }
       const newMonth = answer.entry.date.slice(0, 7);
-      setMoved(shown && newMonth !== shown ? `The entry moved to ${monthLabel(newMonth)}.` : null);
+      setNote(shown && newMonth !== shown ? `The entry moved to ${monthLabel(newMonth)}.` : null);
       setEditing(null);
       result.reload();
     } catch (e) {
@@ -98,7 +142,7 @@ export function SavedEntries({ client = api }: { client?: ApiClient }) {
         <Button onClick={() => go(1)} isDisabled={!data || data.month >= data.current_month}>Next</Button>
       </HStack>
       <Box aria-live="polite">
-        {moved && <Text role="status" mb={4}>{moved}</Text>}
+        {note && <Text role="status" mb={4}>{note}</Text>}
         {result.status === 'loading' && <Text>Loading…</Text>}
         {result.status === 'error' && <Text role="alert">Could not load the saved entries: {result.error}</Text>}
         {data && data.entries.length === 0 && <Text>No saved entries in this month.</Text>}
@@ -117,12 +161,21 @@ export function SavedEntries({ client = api }: { client?: ApiClient }) {
                     onSave={save}
                     onCancel={() => setEditing(null)}
                   />
+                ) : deleting?.id === entry.id ? (
+                  <ConfirmDeleteRow
+                    key={entry.id}
+                    entry={entry}
+                    deleting={deleting}
+                    onConfirm={confirmDelete}
+                    onCancel={() => setDeleting(null)}
+                  />
                 ) : (
                   <EntryRow
                     key={entry.id}
                     entry={entry}
-                    canEdit={editing === null}
-                    onEdit={() => { setMoved(null); setEditing({ id: entry.id, text: entry.typed, saving: false, error: null }); }}
+                    canEdit={!rowOpen}
+                    onEdit={() => { setNote(null); setEditing({ id: entry.id, text: entry.typed, saving: false, error: null }); }}
+                    onDelete={() => { setNote(null); setDeleting({ id: entry.id, busy: false, error: null }); }}
                   />
                 ))}
             </Tbody>

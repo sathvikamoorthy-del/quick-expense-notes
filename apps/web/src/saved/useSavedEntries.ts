@@ -1,4 +1,4 @@
-// The saved-entries list and editing one entry (REQ-280). The API applies the rules; this only sends the text as typed.
+// The saved-entries list, editing one entry (REQ-280) and deleting one (REQ-281). The API applies the rules; this only sends the text as typed.
 import { api } from '../api/client';
 import type { components } from '../api/schema';
 import type { ApiClient } from '../entries/useExpand';
@@ -28,6 +28,13 @@ export async function editEntry(id: string, text: string, client: ApiClient = ap
     body: { text },
   });
   if (data) return data;
+  throw failure(error, response.status);
+}
+
+/** Calls DELETE /entries/{id} (REQ-281: final, no undo). Resolves when deleted; throws the API error code otherwise. */
+export async function deleteEntry(id: string, client: ApiClient = api): Promise<void> {
+  const { error, response } = await client.DELETE('/entries/{expense_id}', { params: { path: { expense_id: id } } });
+  if (response.ok) return;
   throw failure(error, response.status);
 }
 
