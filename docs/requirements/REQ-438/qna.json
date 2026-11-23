@@ -2,7 +2,7 @@
   "entity_type": "requirement",
   "entity_id": "REQ-438",
   "assigned_to": "EackSUlFzsWHlVljpQWgdDETfhs1",
-  "status": "pending",
+  "status": "completed",
   "questions": [
     {
       "id": "q1",
@@ -17,9 +17,10 @@
       "allowOther": true,
       "reason": "The narrowed rule depends on this split. Without it, an unknown code could reach the AI, or the sample sentence would fail as an unknown code.",
       "required": true,
-      "answer": null,
-      "answered_by": null,
-      "answered_at": null
+      "answer": "Code form = the first word is 1 to 3 letters and the second word is an amount; any other line goes to AI",
+      "answered_by": "EackSUlFzsWHlVljpQWgdDETfhs1",
+      "answered_at": "2026-11-23T16:21:41.000Z",
+      "other": null
     },
     {
       "id": "q2",
@@ -33,9 +34,10 @@
       "allowOther": true,
       "reason": "The merchant table and the expenses table only hold known merchant codes; storing a free merchant name would change the data design.",
       "required": true,
-      "answer": null,
-      "answered_by": null,
-      "answered_at": null
+      "answer": "Only merchants in the table; any other merchant makes the line an error",
+      "answered_by": "EackSUlFzsWHlVljpQWgdDETfhs1",
+      "answered_at": "2026-11-23T16:21:41.000Z",
+      "other": null
     },
     {
       "id": "q3",
@@ -43,9 +45,10 @@
       "text": "Should an AI-read row be marked in the review table (for example `AI` next to it), so the user knows it was not read by the rules?",
       "reason": "The review table today shows only rule results; the mark changes the screen.",
       "required": true,
-      "answer": null,
-      "answered_by": null,
-      "answered_at": null
+      "answer": "Yes",
+      "answered_by": "EackSUlFzsWHlVljpQWgdDETfhs1",
+      "answered_at": "2026-11-23T16:21:41.000Z",
+      "other": null
     },
     {
       "id": "q4",
@@ -58,9 +61,10 @@
       "allowOther": true,
       "reason": "Asking again could make saves fail at random; not asking again needs an exception to the REQ-278 rule.",
       "required": true,
-      "answer": null,
-      "answered_by": null,
-      "answered_at": null
+      "answer": "Save exactly what the review showed, without asking the AI again",
+      "answered_by": "EackSUlFzsWHlVljpQWgdDETfhs1",
+      "answered_at": "2026-11-23T16:21:41.000Z",
+      "other": null
     },
     {
       "id": "q5",
@@ -74,9 +78,10 @@
       "allowOther": true,
       "reason": "The edit flow re-expands the typed text by the rules, which would fail on a sentence.",
       "required": true,
-      "answer": null,
-      "answered_by": null,
-      "answered_at": null
+      "answer": "The edit box shows the entry in short code form (e.g. `ZMT 450 11/11 dinner`) and the rules apply",
+      "answered_by": "EackSUlFzsWHlVljpQWgdDETfhs1",
+      "answered_at": "2026-11-23T16:21:41.000Z",
+      "other": null
     },
     {
       "id": "q6",
@@ -84,9 +89,10 @@
       "text": "What may be sent to the Claude API? Proposed: only the typed line, today's date and the category and merchant tables; no user id, name or other entries. Confirm or change.",
       "reason": "It is the only place the user's data leaves the app.",
       "required": true,
-      "answer": null,
-      "answered_by": null,
-      "answered_at": null
+      "answer": "Confirmed: only the typed line, today's date and the category and merchant tables. No user id, name, email or other entries.",
+      "answered_by": "EackSUlFzsWHlVljpQWgdDETfhs1",
+      "answered_at": "2026-11-23T16:21:41.000Z",
+      "other": null
     },
     {
       "id": "q7",
@@ -94,9 +100,10 @@
       "text": "Is there a limit on plain-words lines per text box (they still count toward the 20 entries), or per day? If yes, what is it and what message is shown?",
       "reason": "Each AI line is a paid API call and slower than the rules.",
       "required": false,
-      "answer": null,
-      "answered_by": null,
-      "answered_at": null
+      "answer": "Yes: at most 5 plain-words lines per text box (they still count toward the 20 entries). If more, the extra lines get the message \"Too many plain-words lines (max 5).\" No daily limit.",
+      "answered_by": "EackSUlFzsWHlVljpQWgdDETfhs1",
+      "answered_at": "2026-11-23T16:21:41.000Z",
+      "other": null
     },
     {
       "id": "q8",
@@ -104,9 +111,10 @@
       "text": "Exact wording of the message when the AI is unavailable or its answer is not valid.",
       "reason": "The feature asks for a clear message but does not give the text; the other error messages are fixed in the rules document.",
       "required": true,
-      "answer": null,
-      "answered_by": null,
-      "answered_at": null
+      "answer": "AI help is not available right now. Type the entry in code form or try again.\nWhen the answer is not valid: The AI could not read this line. Type it in code form.",
+      "answered_by": "EackSUlFzsWHlVljpQWgdDETfhs1",
+      "answered_at": "2026-11-23T16:21:41.000Z",
+      "other": null
     }
   ]
 }
