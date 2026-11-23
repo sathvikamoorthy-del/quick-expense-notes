@@ -10,6 +10,7 @@ Rules (docs/requirements/REQ-276/req.md):
 - The amount is a positive number with at most 2 decimals, counted as typed (before `k`). `k` means thousand.
 - The third field is a date when it is `td`, `yd` or digits/digits; otherwise it is the first word of the note.
   `d/m` takes one or two digits each and means that day in the current year. A future date is not allowed.
+- An edit (WI-052) passes the entry's saved day as `reference`: dates count from it, the future check from today.
 - Exactly one error per entry: the checks run in the order of the REQ-276 error table, the first failure wins.
 """
 
@@ -89,19 +90,21 @@ def _parse_amount(token: str) -> int | EntryError:
     return int(value * 100)
 
 
-def _parse_date(token: str, today: date) -> date | EntryError:
+def _parse_date(token: str, base: date, today: date) -> date | EntryError:
+    """`td` / `yd` / `dd/mm` count from `base` (today, or an edited entry's saved day); the future is after `today`."""
     word = token.lower()
     if word == "td":
-        return today
-    if word == "yd":
-        return today - timedelta(days=1)
-    match = _DAY_MONTH.fullmatch(token)
-    if not match:
-        return EntryError(DATE_INVALID)
-    try:
-        day = date(today.year, int(match.group(2)), int(match.group(1)))
-    except ValueError:
-        return EntryError(DATE_INVALID)
+        day = base
+    elif word == "yd":
+        day = base - timedelta(days=1)
+    else:
+        match = _DAY_MONTH.fullmatch(token)
+        if not match:
+            return EntryError(DATE_INVALID)
+        try:
+            day = date(base.year, int(match.group(2)), int(match.group(1)))
+        except ValueError:
+            return EntryError(DATE_INVALID)
     return EntryError(DATE_FUTURE) if day > today else day
 
 
@@ -109,9 +112,13 @@ def _is_date(token: str) -> bool:
     return token.lower() in ("td", "yd") or _DATE_SHAPED.fullmatch(token) is not None
 
 
-def expand(text: str, today: date, codes: dict[str, CodeInfo]) -> Expanded | EntryError:
+def expand(text: str, today: date, codes: dict[str, CodeInfo], reference: date | None = None) -> Expanded | EntryError:
     """Expands one entry. `codes` is keyed by upper-case code. Raises ValueError for an entry with no text at all
-    (an empty entry is not something the rules define: the caller rejects it before asking)."""
+    (an empty entry is not something the rules define: the caller rejects it before asking).
+
+    `reference` (WI-052, an edit): the day the entry was saved. No date, `td`, `yd` and the `dd/mm` year then count
+    from it instead of today; a date after `today` is still refused as in the future."""
+    base = reference or today
     entry = text.strip()
     first = _next_token(entry, 0)
     if first is None:
@@ -131,10 +138,10 @@ def expand(text: str, today: date, codes: dict[str, CodeInfo]) -> Expanded | Ent
     if isinstance(amount, EntryError):
         return amount
 
-    spent_on = today
+    spent_on = base
     third = _next_token(entry, pos)
     if third is not None and _is_date(third[0]):
-        parsed = _parse_date(third[0], today)
+        parsed = _parse_date(third[0], base, today)
         if isinstance(parsed, EntryError):
             return parsed
         spent_on, pos = parsed, third[1]

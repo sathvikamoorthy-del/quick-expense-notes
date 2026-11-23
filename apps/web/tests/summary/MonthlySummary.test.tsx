@@ -102,6 +102,7 @@ describe('MonthlySummary', () => {
     renderApp(<MonthlySummary client={months().client} />);
     await screen.findByRole('table');
     expect(screen.getByRole('link', { name: 'Enter expenses' })).toHaveAttribute('href', '/entries');
+    expect(screen.getByRole('link', { name: 'Saved entries' })).toHaveAttribute('href', '/saved-entries'); // WI-052
   });
 
   it('names months and moves between them across years', () => {

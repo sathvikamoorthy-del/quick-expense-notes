@@ -254,3 +254,96 @@ def test_summary_of_a_future_or_bad_month_is_422(client, month):
 
 def test_summary_not_signed_in_is_401(client):
     assert client.get("/summary").status_code == 401
+
+
+def saved_entries(client, month: str | None = None) -> dict:
+    response = client.get("/entries", params={"month": month} if month else {}, headers=bearer())
+    assert response.status_code == 200, response.json()
+    return response.json()
+
+
+def test_the_saved_entries_list_shows_the_month_newest_date_first(client):
+    save_text(client, "F 250\nSWG 340 yd\nF 99 1/11")
+    response = client.get("/entries", headers=bearer())
+    assert response.headers["cache-control"] == "no-store"
+    body = response.json()
+    assert (body["month"], body["current_month"]) == ("2026-11", "2026-11")
+    assert [(e["typed"], e["date"]) for e in body["entries"]] == [
+        ("F 250", "2026-11-12"),
+        ("SWG 340 yd", "2026-11-11"),
+        ("F 99 1/11", "2026-11-01"),
+    ]
+    swg = body["entries"][1]
+    assert {k: swg[k] for k in ("code", "merchant", "category", "amount", "amount_paise", "note")} == {
+        "code": "SWG",
+        "merchant": "Swiggy",
+        "category": "Food",
+        "amount": "340.00",
+        "amount_paise": 34000,
+        "note": None,
+    }
+    assert len(swg["id"]) == 36
+
+
+def test_editing_an_entry_returns_it_and_the_list_shows_the_new_values_at_once(client):
+    save_text(client, "UBR 180 12/11 airport")
+    entry = saved_entries(client)["entries"][0]
+    response = client.put(f"/entries/{entry['id']}", json={"text": "UBR 220 12/11 airport"}, headers=bearer())
+    assert response.status_code == 200
+    body = response.json()
+    assert (body["ok"], body["error"], body["entry"]["amount"], body["entry"]["id"]) == (
+        True,
+        None,
+        "220.00",
+        entry["id"],
+    )
+    assert saved_entries(client)["entries"][0]["typed"] == "UBR 220 12/11 airport"
+    assert client.get("/summary", headers=bearer()).json()["grand_total"] == "220.00"
+
+
+def test_an_invalid_edit_is_a_normal_answer_and_changes_nothing(client):
+    save_text(client, "F 250")
+    entry = saved_entries(client)["entries"][0]
+    response = client.put(f"/entries/{entry['id']}", json={"text": "X 100"}, headers=bearer())
+    assert (response.status_code, response.json()) == (200, {"ok": False, "error": 'Unknown code "X".', "entry": None})
+    assert saved_entries(client)["entries"][0] == entry
+
+
+def test_editing_an_unknown_or_another_users_entry_is_404(client, db_file):
+    save_text(client, "F 250")
+    entry = saved_entries(client)["entries"][0]
+    connection = sqlite3.connect(db_file)
+    try:
+        connection.execute(
+            "INSERT INTO users (id, email, password_hash, display_name) VALUES (?, 'b@example.com', 'x', 'B')",
+            ("22222222-2222-2222-2222-222222222222",),
+        )
+        connection.commit()
+    finally:
+        connection.close()
+    other = bearer("22222222-2222-2222-2222-222222222222")
+    response = client.put(f"/entries/{entry['id']}", json={"text": "F 1"}, headers=other)
+    assert (response.status_code, response.json()["error"]) == (404, "not-found")
+    assert client.get("/entries", headers=other).json()["entries"] == []
+    unknown = client.put("/entries/00000000-0000-0000-0000-000000000000", json={"text": "F 1"}, headers=bearer())
+    assert unknown.status_code == 404
+    assert saved_entries(client)["entries"][0] == entry
+
+
+@pytest.mark.parametrize("body", [{}, {"text": ""}, {"text": "   "}])
+def test_an_edit_with_no_text_is_422(client, body):
+    save_text(client, "F 250")
+    entry = saved_entries(client)["entries"][0]
+    response = client.put(f"/entries/{entry['id']}", json=body, headers=bearer())
+    assert (response.status_code, response.json()["error"]) == (422, "validation-error")
+
+
+@pytest.mark.parametrize("month", ["2026-12", "2026-13", "nov"])
+def test_the_list_of_a_future_or_bad_month_is_422(client, month):
+    response = client.get("/entries", params={"month": month}, headers=bearer())
+    assert (response.status_code, response.json()["error"]) == (422, "validation-error")
+
+
+def test_the_list_and_edit_need_sign_in(client):
+    assert client.get("/entries").status_code == 401
+    assert client.put("/entries/x", json={"text": "F 1"}).status_code == 401

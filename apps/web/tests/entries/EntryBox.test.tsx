@@ -196,6 +196,7 @@ describe('EntryBox', () => {
     renderApp(<EntryBox client={answering({ data: {}, response: { status: 200 } }).client} />);
     await act(async () => undefined); // the hook's first (empty) answer
     expect(screen.getByRole('link', { name: 'Monthly summary' })).toHaveAttribute('href', '/summary');
+    expect(screen.getByRole('link', { name: 'Saved entries' })).toHaveAttribute('href', '/saved-entries'); // WI-052
   });
 
   it('formats calendar dates like the mock', () => {

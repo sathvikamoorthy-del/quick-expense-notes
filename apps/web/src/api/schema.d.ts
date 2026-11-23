@@ -21,6 +21,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Saved Entries */
+        get: operations["saved_entries_entries_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/entries/expand": {
         parameters: {
             query?: never;
@@ -72,6 +89,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/entries/{expense_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Edit Saved Entry */
+        put: operations["edit_saved_entry_entries__expense_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/summary": {
         parameters: {
             query?: never;
@@ -112,6 +146,28 @@ export interface components {
             total: string;
             /** Total Paise */
             total_paise: number;
+        };
+        /**
+         * EditRequest
+         * @description One short entry replacing the saved one, e.g. `UBR 220 12/11 airport`.
+         */
+        EditRequest: {
+            /**
+             * Text
+             * @description One short entry, e.g. `SWG 340 yd`.
+             */
+            text: string;
+        };
+        /** EditResponse */
+        EditResponse: {
+            entry?: components["schemas"]["SavedEntry"] | null;
+            /** Error */
+            error?: string | null;
+            /**
+             * Ok
+             * @description false when the edit was refused (error says why); the entry is then unchanged.
+             */
+            ok: boolean;
         };
         /** ExpandAllRequest */
         ExpandAllRequest: {
@@ -232,6 +288,54 @@ export interface components {
              */
             saved: number;
         };
+        /** SavedEntriesResponse */
+        SavedEntriesResponse: {
+            /**
+             * Current Month
+             * @description The current month in IST, YYYY-MM: the latest month that can be opened.
+             */
+            current_month: string;
+            /**
+             * Entries
+             * @description The user's entries of the month, newest date first.
+             */
+            entries: components["schemas"]["SavedEntry"][];
+            /**
+             * Month
+             * @description The month shown, YYYY-MM.
+             */
+            month: string;
+        };
+        /** SavedEntry */
+        SavedEntry: {
+            /**
+             * Amount
+             * @description Rupees with 2 decimals, e.g. 340.00
+             */
+            amount: string;
+            /** Amount Paise */
+            amount_paise: number;
+            /** Category */
+            category: string;
+            /** Code */
+            code: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Id */
+            id: string;
+            /** Merchant */
+            merchant: string | null;
+            /** Note */
+            note: string | null;
+            /**
+             * Typed
+             * @description The short entry as typed, e.g. `SWG 340 yd`: the pre-fill of an edit.
+             */
+            typed: string;
+        };
         /** SignInRequest */
         SignInRequest: {
             /** Email */
@@ -343,6 +447,38 @@ export interface operations {
             };
         };
     };
+    saved_entries_entries_get: {
+        parameters: {
+            query?: {
+                /** @description YYYY-MM; the current IST month when left out. */
+                month?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedEntriesResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     expand_entry_entries_expand_post: {
         parameters: {
             query?: never;
@@ -429,6 +565,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SaveResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_saved_entry_entries__expense_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                expense_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EditResponse"];
                 };
             };
             /** @description Validation Error */

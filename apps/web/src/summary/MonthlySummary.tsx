@@ -60,7 +60,10 @@ export function MonthlySummary({ client = api }: { client?: ApiClient }) {
           </Table>
         )}
       </Box>
-      <Link as={RouterLink} to="/entries" display="inline-block" mt={6}>Enter expenses</Link>
+      <HStack spacing={6} mt={6}>
+        <Link as={RouterLink} to="/entries">Enter expenses</Link>
+        <Link as={RouterLink} to="/saved-entries">Saved entries</Link>
+      </HStack>
     </Box>
   );
 }

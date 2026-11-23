@@ -141,7 +141,10 @@ export function EntryBox({ client = api }: { client?: ApiClient }) {
         {review !== null && submitted !== null && <ResultTable results={review} />}
         {result.status === 'success' && result.data && !result.data.ok && <Text role="alert">Error: {result.data.error}</Text>}
       </Box>
-      <Link as={RouterLink} to="/summary" display="inline-block" mt={6}>Monthly summary</Link>
+      <HStack spacing={6} mt={6}>
+        <Link as={RouterLink} to="/summary">Monthly summary</Link>
+        <Link as={RouterLink} to="/saved-entries">Saved entries</Link>
+      </HStack>
     </Box>
   );
 }

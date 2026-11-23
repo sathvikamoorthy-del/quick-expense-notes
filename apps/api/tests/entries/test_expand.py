@@ -197,3 +197,35 @@ def test_today_follows_ist_at_midnight():
 
 def test_today_ist_default_is_an_ist_date():
     assert today_ist() == datetime.now(IST).date()
+
+
+# WI-052: an edit counts dates from the day the entry was saved (reference); the future is still after today.
+SAVED = date(2026, 11, 5)
+
+
+@pytest.mark.parametrize(
+    ("typed", "day"),
+    [
+        ("F 100", SAVED),  # no date: the saved day
+        ("F 100 td", SAVED),
+        ("F 100 yd", date(2026, 11, 4)),
+        ("F 100 1/11", date(2026, 11, 1)),
+        ("F 100 10/11", date(2026, 11, 10)),  # after the saved day, before today: allowed
+    ],
+)
+def test_an_edit_counts_dates_from_the_saved_day(typed, day):
+    result = expand(typed, TODAY, CODES, reference=SAVED)
+    assert isinstance(result, Expanded) and result.date == day
+
+
+def test_an_edit_still_refuses_a_date_after_today():
+    assert expand("F 100 13/11", TODAY, CODES, reference=SAVED) == EntryError(DATE_FUTURE)
+
+
+def test_an_edit_uses_the_saved_days_year_for_dd_mm():
+    result = expand("F 100 30/12", TODAY, CODES, reference=date(2025, 12, 31))
+    assert isinstance(result, Expanded) and result.date == date(2025, 12, 30)
+
+
+def test_without_a_reference_nothing_changes():
+    assert expand("SWG 340 yd", TODAY, CODES) == expand("SWG 340 yd", TODAY, CODES, reference=None)

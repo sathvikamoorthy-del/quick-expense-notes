@@ -32,6 +32,57 @@
         "title": "CategoryTotalModel",
         "type": "object"
       },
+      "EditRequest": {
+        "description": "One short entry replacing the saved one, e.g. `UBR 220 12/11 airport`.",
+        "properties": {
+          "text": {
+            "description": "One short entry, e.g. `SWG 340 yd`.",
+            "maxLength": 500,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "EditRequest",
+        "type": "object"
+      },
+      "EditResponse": {
+        "properties": {
+          "entry": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SavedEntry"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "ok": {
+            "description": "false when the edit was refused (error says why); the entry is then unchanged.",
+            "title": "Ok",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok"
+        ],
+        "title": "EditResponse",
+        "type": "object"
+      },
       "ExpandAllRequest": {
         "properties": {
           "text": {
@@ -313,6 +364,105 @@
         "title": "SaveResponse",
         "type": "object"
       },
+      "SavedEntriesResponse": {
+        "properties": {
+          "current_month": {
+            "description": "The current month in IST, YYYY-MM: the latest month that can be opened.",
+            "title": "Current Month",
+            "type": "string"
+          },
+          "entries": {
+            "description": "The user's entries of the month, newest date first.",
+            "items": {
+              "$ref": "#/components/schemas/SavedEntry"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "month": {
+            "description": "The month shown, YYYY-MM.",
+            "title": "Month",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "current_month",
+          "entries"
+        ],
+        "title": "SavedEntriesResponse",
+        "type": "object"
+      },
+      "SavedEntry": {
+        "properties": {
+          "amount": {
+            "description": "Rupees with 2 decimals, e.g. 340.00",
+            "title": "Amount",
+            "type": "string"
+          },
+          "amount_paise": {
+            "title": "Amount Paise",
+            "type": "integer"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "merchant": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Merchant"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "typed": {
+            "description": "The short entry as typed, e.g. `SWG 340 yd`: the pre-fill of an edit.",
+            "title": "Typed",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "typed",
+          "code",
+          "merchant",
+          "category",
+          "amount",
+          "amount_paise",
+          "date",
+          "note"
+        ],
+        "title": "SavedEntry",
+        "type": "object"
+      },
       "SignInRequest": {
         "properties": {
           "email": {
@@ -510,6 +660,57 @@
         ]
       }
     },
+    "/entries": {
+      "get": {
+        "operationId": "saved_entries_entries_get",
+        "parameters": [
+          {
+            "description": "YYYY-MM; the current IST month when left out.",
+            "in": "query",
+            "name": "month",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "YYYY-MM; the current IST month when left out.",
+              "title": "Month"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedEntriesResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Saved Entries",
+        "tags": [
+          "entries"
+        ]
+      }
+    },
     "/entries/expand": {
       "post": {
         "operationId": "expand_entry_entries_expand_post",
@@ -628,6 +829,58 @@
           }
         },
         "summary": "Save Entries",
+        "tags": [
+          "entries"
+        ]
+      }
+    },
+    "/entries/{expense_id}": {
+      "put": {
+        "operationId": "edit_saved_entry_entries__expense_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "expense_id",
+            "required": true,
+            "schema": {
+              "title": "Expense Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Edit Saved Entry",
         "tags": [
           "entries"
         ]

@@ -2,6 +2,7 @@
 POST /entries/expand-all: expands every entry of one text box (REQ-277, rules in app.entries.batch).
 POST /entries/save: saves the reviewed entries as the user's expense records (REQ-278, rules in app.entries.save).
 GET /summary: the user's monthly summary by category (REQ-279, rules in app.entries.summary).
+GET /entries, PUT /entries/{id}: the saved-entries list and editing one entry (REQ-280, rules in app.entries.edit).
 
 A rule error is a normal answer (200, ok=false, the exact message), not an HTTP error: the user typed
 something the rules reject. An empty text is a bad request (422): the rules do not define an empty entry.
@@ -20,9 +21,12 @@ from app.db.session import get_session
 from app.entries.batch import MAX_ENTRIES, EntryResult, TooMany, expand_all, split_entries
 from app.entries.clock import today_ist
 from app.entries.codes import load_codes
-from app.entries.expand import EntryError, Expanded, expand, format_paise
+from app.entries.edit import Refused as EditRefused
+from app.entries.edit import edit_entry, list_month
+from app.entries.expand import CodeInfo, EntryError, Expanded, expand, format_paise
 from app.entries.save import Refused, Reviewed, UnknownUser, save_reviewed
 from app.entries.summary import is_future, month_of, monthly_summary, parse_month
+from app.models import Expenses
 
 router = APIRouter(tags=["entries"])
 
@@ -204,9 +208,7 @@ async def summary(
     # Totals must equal the saved entries when the summary is opened: never served from the response cache.
     response.headers["Cache-Control"] = "no-store"
     today = today_ist()
-    bounds = parse_month(month if month is not None else month_of(today))
-    if bounds is None or is_future(bounds[0], today):
-        raise HTTPException(status_code=422, detail="validation-error")
+    bounds = _month_bounds(month, today)
     names = {info.category_code: info.category for info in (await load_codes(session)).values()}
     result = await monthly_summary(session, auth.user_id, bounds[0], bounds[1], names)
     return SummaryResponse(
@@ -221,6 +223,91 @@ async def summary(
         grand_total=format_paise(result.grand_total_paise),
         grand_total_paise=result.grand_total_paise,
     )
+
+
+def _month_bounds(month: str | None, today: date) -> tuple[date, date]:
+    """The month asked for (default: the current IST month); 422 when it is not YYYY-MM or lies in the future."""
+    bounds = parse_month(month if month is not None else month_of(today))
+    if bounds is None or is_future(bounds[0], today):
+        raise HTTPException(status_code=422, detail="validation-error")
+    return bounds
+
+
+class SavedEntry(BaseModel):
+    id: str
+    typed: str = Field(description="The short entry as typed, e.g. `SWG 340 yd`: the pre-fill of an edit.")
+    code: str
+    merchant: str | None
+    category: str
+    amount: str = Field(description="Rupees with 2 decimals, e.g. 340.00")
+    amount_paise: int
+    date: date
+    note: str | None
+
+
+class SavedEntriesResponse(BaseModel):
+    month: str = Field(description="The month shown, YYYY-MM.")
+    current_month: str = Field(description="The current month in IST, YYYY-MM: the latest month that can be opened.")
+    entries: list[SavedEntry] = Field(description="The user's entries of the month, newest date first.")
+
+
+def _saved(row: Expenses, codes: dict[str, CodeInfo]) -> SavedEntry:
+    code = row.merchant_code or row.category_code
+    info = codes[code]
+    return SavedEntry(
+        id=row.id,
+        typed=row.typed_text,
+        code=code,
+        merchant=info.merchant,
+        category=info.category,
+        amount=format_paise(row.amount_paise),
+        amount_paise=row.amount_paise,
+        date=date.fromisoformat(row.spent_on),
+        note=row.note,
+    )
+
+
+@router.get("/entries", response_model=SavedEntriesResponse)
+async def saved_entries(
+    response: Response,
+    auth: Annotated[AuthClaims, Depends(require_auth)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+    month: Annotated[str | None, Query(description="YYYY-MM; the current IST month when left out.")] = None,
+) -> SavedEntriesResponse:
+    response.headers["Cache-Control"] = "no-store"  # an edit must show at once, never a cached list
+    today = today_ist()
+    bounds = _month_bounds(month, today)
+    codes = await load_codes(session)
+    rows = await list_month(session, auth.user_id, bounds[0], bounds[1])
+    return SavedEntriesResponse(
+        month=month_of(bounds[0]), current_month=month_of(today), entries=[_saved(row, codes) for row in rows]
+    )
+
+
+class EditRequest(ExpandRequest):
+    """One short entry replacing the saved one, e.g. `UBR 220 12/11 airport`."""
+
+
+class EditResponse(BaseModel):
+    ok: bool = Field(description="false when the edit was refused (error says why); the entry is then unchanged.")
+    error: str | None = None
+    entry: SavedEntry | None = None
+
+
+@router.put("/entries/{expense_id}", response_model=EditResponse)
+async def edit_saved_entry(
+    expense_id: str,
+    body: EditRequest,
+    auth: Annotated[AuthClaims, Depends(require_auth)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> EditResponse:
+    codes = await load_codes(session)
+    outcome = await edit_entry(session, auth.user_id, expense_id, body.text, today_ist(), codes)
+    if outcome is None:  # unknown, or another user's: never says which
+        raise HTTPException(status_code=404, detail="not-found")
+    if isinstance(outcome, EditRefused):
+        return EditResponse(ok=False, error=outcome.message)
+    return EditResponse(ok=True, entry=_saved(outcome, codes))
 
 
 def mount(app: FastAPI) -> None:
