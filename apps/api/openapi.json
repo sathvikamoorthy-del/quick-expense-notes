@@ -182,6 +182,18 @@
       },
       "ExpandResult": {
         "properties": {
+          "ai": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "true for a plain-words line read with AI help (shown marked AI); absent means false.",
+            "title": "Ai"
+          },
           "entry": {
             "anyOf": [
               {
@@ -417,6 +429,11 @@
             "title": "Date",
             "type": "string"
           },
+          "edit_text": {
+            "description": "The pre-fill of an edit: `typed`, or for a plain-words entry its short code form, e.g. `ZMT 450 11/11 dinner`.",
+            "title": "Edit Text",
+            "type": "string"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -444,7 +461,7 @@
             "title": "Note"
           },
           "typed": {
-            "description": "The short entry as typed, e.g. `SWG 340 yd`: the pre-fill of an edit.",
+            "description": "The entry as typed, e.g. `SWG 340 yd` or a plain-words sentence.",
             "title": "Typed",
             "type": "string"
           }
@@ -452,6 +469,7 @@
         "required": [
           "id",
           "typed",
+          "edit_text",
           "code",
           "merchant",
           "category",

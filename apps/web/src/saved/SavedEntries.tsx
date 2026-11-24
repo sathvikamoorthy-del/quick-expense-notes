@@ -174,7 +174,7 @@ export function SavedEntries({ client = api }: { client?: ApiClient }) {
                     key={entry.id}
                     entry={entry}
                     canEdit={!rowOpen}
-                    onEdit={() => { setNote(null); setEditing({ id: entry.id, text: entry.typed, saving: false, error: null }); }}
+                    onEdit={() => { setNote(null); setEditing({ id: entry.id, text: entry.edit_text, saving: false, error: null }); }}
                     onDelete={() => { setNote(null); setDeleting({ id: entry.id, busy: false, error: null }); }}
                   />
                 ))}

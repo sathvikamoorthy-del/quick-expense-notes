@@ -141,7 +141,7 @@ def test_save_stores_the_valid_reviewed_entries_and_returns_the_failed_ones(clie
     assert response.status_code == 200
     body = response.json()
     assert (body["ok"], body["error"], body["saved"], len(body["ids"])) == (True, None, 3, 3)
-    assert body["failed"] == [{"typed": "X 100", "ok": False, "entry": None, "error": 'Unknown code "X".'}]
+    assert body["failed"] == [{"typed": "X 100", "ok": False, "entry": None, "error": 'Unknown code "X".', "ai": False}]
     assert expense_count(db_file) == 3
 
 
@@ -386,3 +386,97 @@ def test_deleting_another_users_or_an_unknown_entry_is_404_and_deletes_nothing(c
 
 def test_deleting_needs_sign_in(client):
     assert client.delete("/entries/x").status_code == 401
+
+
+# REQ-438 / WI-066: plain-words lines read with AI help (a fake reader; no test calls the Claude API)
+@pytest.fixture
+def fake_reader():
+    from tests.entries.test_ai_read import SENTENCE, FakeReader, zomato_answer
+
+    return FakeReader({SENTENCE: zomato_answer()})
+
+
+@pytest.fixture
+def ai_client(db_file, monkeypatch, fake_reader):
+    from app.entries.ai_client import get_ai_reader
+
+    clear_codes_cache()
+    monkeypatch.setenv("JWT_SECRET", SECRET)
+    monkeypatch.setenv("DATABASE_URL", f"file:{db_file}")
+    monkeypatch.setattr("app.entries.routes.today_ist", lambda: date(2026, 11, 12))
+    app = create_app(settings=Settings(env="development"))
+    app.dependency_overrides[get_ai_reader] = lambda: fake_reader
+    with client_for(app) as test_client:
+        yield test_client
+    clear_codes_cache()
+
+
+AI_SENTENCE = "paid 450 to zomato yesterday for dinner"
+
+
+def test_expand_all_reads_a_plain_words_line_with_ai_and_marks_it(ai_client, fake_reader):
+    text = f"F 250\n{AI_SENTENCE}\nX 100"
+    results = ai_client.post("/entries/expand-all", json={"text": text}, headers=bearer()).json()["results"]
+    assert [(r["typed"], r["ok"], r["ai"]) for r in results] == [
+        ("F 250", True, False),
+        (AI_SENTENCE, True, True),
+        ("X 100", False, False),
+    ]
+    assert results[1]["entry"] == {
+        "code": "ZMT",
+        "merchant": "Zomato",
+        "category": "Food",
+        "amount": "450.00",
+        "amount_paise": 45000,
+        "date": "2026-11-11",
+        "note": "dinner",
+    }
+    assert results[2]["error"] == 'Unknown code "X".'
+    assert fake_reader.calls == [AI_SENTENCE]
+
+
+def test_an_ai_failure_shows_on_that_line_only(ai_client):
+    text = "F 250\nspent 99 on something odd"  # the fake reader cannot read it
+    results = ai_client.post("/entries/expand-all", json={"text": text}, headers=bearer()).json()["results"]
+    assert (results[0]["ok"], results[1]["ok"], results[1]["ai"]) == (True, False, True)
+    assert results[1]["error"] == "The AI could not read this line. Type it in code form."
+
+
+def test_save_stores_the_reviewed_ai_line_without_asking_the_ai_again(ai_client, fake_reader, db_file):
+    text = f"F 250\n{AI_SENTENCE}"
+    results = ai_client.post("/entries/expand-all", json={"text": text}, headers=bearer()).json()["results"]
+    fake_reader.calls.clear()
+    body = ai_client.post("/entries/save", json={"text": text, "reviewed": results}, headers=bearer()).json()
+    assert (body["ok"], body["saved"]) == (True, 2)
+    assert fake_reader.calls == []
+    assert expense_count(db_file) == 2
+
+
+def test_save_refuses_an_ai_flag_on_a_code_form_line(ai_client, db_file):
+    results = ai_client.post("/entries/expand-all", json={"text": "F 250"}, headers=bearer()).json()["results"]
+    results[0]["ai"] = True
+    body = ai_client.post("/entries/save", json={"text": "F 250", "reviewed": results}, headers=bearer()).json()
+    assert (body["ok"], body["error"]) == (
+        False,
+        "The entries changed since the review. Press Expand to review them again.",
+    )
+    assert expense_count(db_file) == 0
+
+
+def test_the_list_gives_the_edit_text_and_an_edit_with_it_keeps_the_values(ai_client):
+    text = f"SWG 340 yd\n{AI_SENTENCE}"
+    results = ai_client.post("/entries/expand-all", json={"text": text}, headers=bearer()).json()["results"]
+    assert ai_client.post("/entries/save", json={"text": text, "reviewed": results}, headers=bearer()).json()["ok"]
+    entries = {e["typed"]: e for e in saved_entries(ai_client)["entries"]}
+    assert entries["SWG 340 yd"]["edit_text"] == "SWG 340 yd"
+    ai_entry = entries[AI_SENTENCE]
+    assert ai_entry["edit_text"] == "ZMT 450 11/11 dinner"
+    response = ai_client.put(f"/entries/{ai_entry['id']}", json={"text": ai_entry["edit_text"]}, headers=bearer())
+    edited = response.json()
+    assert edited["ok"], edited
+    assert {k: edited["entry"][k] for k in ("code", "amount", "date", "note")} == {
+        "code": "ZMT",
+        "amount": "450.00",
+        "date": "2026-11-11",
+        "note": "dinner",
+    }

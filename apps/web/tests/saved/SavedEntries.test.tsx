@@ -7,10 +7,10 @@ import { SavedEntries } from '../../src/saved/SavedEntries';
 import { renderApp } from '../../src/testing/render';
 
 type Reply = { data?: unknown; error?: unknown; response: { status: number } };
-type Entry = { id: string; typed: string; code: string; merchant: string | null; category: string; amount: string; amount_paise: number; date: string; note: string | null };
+type Entry = { id: string; typed: string; edit_text: string; code: string; merchant: string | null; category: string; amount: string; amount_paise: number; date: string; note: string | null };
 
-const entry = (n: number, typed: string, merchant: string | null, category: string, amount: string, date: string, note: string | null = null): Entry =>
-  ({ id: `id-${n}`, typed, code: typed.split(' ')[0], merchant, category, amount, amount_paise: Math.round(Number(amount) * 100), date, note });
+const entry = (n: number, typed: string, merchant: string | null, category: string, amount: string, date: string, note: string | null = null, editText = typed): Entry =>
+  ({ id: `id-${n}`, typed, edit_text: editText, code: editText.split(' ')[0], merchant, category, amount, amount_paise: Math.round(Number(amount) * 100), date, note });
 
 const UBR = entry(1, 'UBR 180 12/11 airport', 'Uber', 'Travel', '180.00', '2026-11-12', 'airport');
 const SWG = entry(2, 'SWG 340 yd', 'Swiggy', 'Food', '340.00', '2026-11-11');
@@ -80,6 +80,16 @@ describe('SavedEntries', () => {
     await waitFor(() => expect(rowsOf()[0]).toBe('UBR 220 12/11 airportUberTravel220.0012 Nov 2026airportEditDelete'));
     expect(screen.queryByLabelText('Edit entry')).not.toBeInTheDocument();
     expect(f.calls).toContainEqual(['PUT', 'id-1', 'UBR 220 12/11 airport']);
+  });
+
+  it('pre-fills the edit of an entry read with AI help with its short code form (REQ-438 q5)', async () => {
+    const sentence = 'paid 450 to zomato yesterday for dinner';
+    const zmt = entry(3, sentence, 'Zomato', 'Food', '450.00', '2026-11-11', 'dinner', 'ZMT 450 11/11 dinner');
+    renderApp(<SavedEntries client={fakeApi([zmt]).client} />);
+    await screen.findByRole('table');
+    expect(rowsOf()[0]).toBe(`${sentence}ZomatoFood450.0011 Nov 2026dinnerEditDelete`);
+    fireEvent.click(editButtons()[0]);
+    expect(screen.getByLabelText('Edit entry')).toHaveValue('ZMT 450 11/11 dinner');
   });
 
   it('keeps edit mode and shows the rule error when the edit is refused', async () => {

@@ -6,6 +6,9 @@ Rules (docs/workitems/WI-052/impl.md, product owner 22 Nov 2026):
 - No date, `td`, `yd` and `dd/mm` count from the day the entry was saved (the IST date of created_at), so re-saving the
   pre-filled text keeps the date; a date after today is still refused as in the future.
 - The edited entry replaces the old one in place: same id, owner and created_at; updated_at is set to now.
+- An entry read with AI help (REQ-438 q5, WI-066) keeps its sentence as typed_text, but the edit is pre-filled with
+  its short code form (edit_text), e.g. `ZMT 450 11/11 dinner`, and the rules apply. AI-read dates always lie in the
+  year the entry was saved (WI-066 q2), so `d/m` counted from the saved day gives the same date back.
 """
 
 from dataclasses import dataclass
@@ -14,9 +17,10 @@ from datetime import UTC, date, datetime
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.entries.ai_read import is_code_form
 from app.entries.batch import split_entries
 from app.entries.clock import IST
-from app.entries.expand import CodeInfo, EntryError, expand
+from app.entries.expand import CodeInfo, EntryError, expand, format_paise
 from app.models import Expenses
 
 ONE_ENTRY_ONLY = "Type one entry only."
@@ -33,6 +37,19 @@ def saved_day(created_at: str) -> date:
     if moment.tzinfo is None:
         moment = moment.replace(tzinfo=UTC)
     return moment.astimezone(IST).date()
+
+
+def edit_text(row: Expenses) -> str:
+    """The pre-fill of an edit: the entry as typed, or for a plain-words entry its short code form
+    `<code> <amount> <d/m> [note]` (whole rupees without decimals): 45000 paise on 11 Nov -> `ZMT 450 11/11 dinner`."""
+    if is_code_form(row.typed_text):
+        return row.typed_text
+    amount = format_paise(row.amount_paise).removesuffix(".00")
+    spent_on = date.fromisoformat(row.spent_on)
+    parts = [row.merchant_code or row.category_code, amount, f"{spent_on.day}/{spent_on.month}"]
+    if row.note:
+        parts.append(row.note)
+    return " ".join(parts)
 
 
 async def list_month(session: AsyncSession, user_id: str, month_start: date, next_month_start: date) -> list[Expenses]:

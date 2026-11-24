@@ -1,5 +1,6 @@
 """POST /entries/expand: expands one short entry for the signed-in user (REQ-276).
-POST /entries/expand-all: expands every entry of one text box (REQ-277, rules in app.entries.batch).
+POST /entries/expand-all: expands every entry of one text box (REQ-277, rules in app.entries.batch); plain-words lines
+  are read with AI help (REQ-438, app.entries.ai_read and app.entries.ai_client).
 POST /entries/save: saves the reviewed entries as the user's expense records (REQ-278, rules in app.entries.save).
 GET /summary: the user's monthly summary by category (REQ-279, rules in app.entries.summary).
 GET /entries, PUT /entries/{id}: the saved-entries list and editing one entry (REQ-280, rules in app.entries.edit).
@@ -19,11 +20,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.jwt import AuthClaims
 from app.auth.middleware import require_auth
 from app.db.session import get_session
+from app.entries.ai_client import get_ai_reader
+from app.entries.ai_read import AiReader
 from app.entries.batch import MAX_ENTRIES, EntryResult, TooMany, expand_all, split_entries
 from app.entries.clock import today_ist
 from app.entries.codes import load_codes
 from app.entries.edit import Refused as EditRefused
-from app.entries.edit import delete_entry, edit_entry, list_month
+from app.entries.edit import delete_entry, edit_entry, edit_text, list_month
 from app.entries.expand import CodeInfo, EntryError, Expanded, expand, format_paise
 from app.entries.save import Refused, Reviewed, UnknownUser, save_reviewed
 from app.entries.summary import is_future, month_of, monthly_summary, parse_month
@@ -105,6 +108,9 @@ class ExpandResult(BaseModel):
     ok: bool
     entry: ExpandedEntry | None = None
     error: str | None = None
+    ai: bool | None = Field(
+        default=None, description="true for a plain-words line read with AI help (shown marked AI); absent means false."
+    )
 
 
 class ExpandAllResponse(BaseModel):
@@ -118,8 +124,9 @@ async def expand_all_entries(
     body: ExpandAllRequest,
     _auth: Annotated[AuthClaims, Depends(require_auth)],
     session: Annotated[AsyncSession, Depends(get_session)],
+    reader: Annotated[AiReader, Depends(get_ai_reader)],
 ) -> ExpandAllResponse:
-    outcome = expand_all(body.text, today_ist(), await load_codes(session))
+    outcome = await expand_all(body.text, today_ist(), await load_codes(session), reader)
     if isinstance(outcome, TooMany):
         return ExpandAllResponse(ok=False, error=outcome.message)
     return ExpandAllResponse(ok=True, results=[_result(item) for item in outcome])
@@ -127,14 +134,14 @@ async def expand_all_entries(
 
 def _result(item: EntryResult) -> ExpandResult:
     if isinstance(item.result, EntryError):
-        return ExpandResult(typed=item.typed, ok=False, error=item.result.message)
-    return ExpandResult(typed=item.typed, ok=True, entry=_entry(item.result))
+        return ExpandResult(typed=item.typed, ok=False, error=item.result.message, ai=item.ai)
+    return ExpandResult(typed=item.typed, ok=True, entry=_entry(item.result), ai=item.ai)
 
 
 def _reviewed(item: ExpandResult) -> Reviewed:
     entry = item.entry
     if entry is None:
-        return Reviewed(typed=item.typed, ok=item.ok, error=item.error)
+        return Reviewed(typed=item.typed, ok=item.ok, error=item.error, ai=bool(item.ai))
     return Reviewed(
         typed=item.typed,
         ok=item.ok,
@@ -145,6 +152,7 @@ def _reviewed(item: ExpandResult) -> Reviewed:
         amount_paise=entry.amount_paise,
         date=entry.date,
         note=entry.note,
+        ai=bool(item.ai),
     )
 
 
@@ -236,7 +244,11 @@ def _month_bounds(month: str | None, today: date) -> tuple[date, date]:
 
 class SavedEntry(BaseModel):
     id: str
-    typed: str = Field(description="The short entry as typed, e.g. `SWG 340 yd`: the pre-fill of an edit.")
+    typed: str = Field(description="The entry as typed, e.g. `SWG 340 yd` or a plain-words sentence.")
+    edit_text: str = Field(
+        description="The pre-fill of an edit: `typed`, or for a plain-words entry its short code form, "
+        "e.g. `ZMT 450 11/11 dinner`."
+    )
     code: str
     merchant: str | None
     category: str
@@ -258,6 +270,7 @@ def _saved(row: Expenses, codes: dict[str, CodeInfo]) -> SavedEntry:
     return SavedEntry(
         id=row.id,
         typed=row.typed_text,
+        edit_text=edit_text(row),
         code=code,
         merchant=info.merchant,
         category=info.category,

@@ -9,9 +9,11 @@ import pytest
 from sqlalchemy import select
 
 from app.db.session import Database
-from app.entries.batch import expand_all
+from app.entries.ai_read import AI_UNAVAILABLE, TOO_MANY_PLAIN, AiFailure
+from app.entries.batch import EntryResult, expand_all, plan_all
 from app.entries.save import REVIEW_CHANGED, Refused, Reviewed, Saved, UnknownUser, as_reviewed, save_reviewed
 from app.models import Expenses
+from tests.entries.test_ai_read import SENTENCE, FakeReader, zomato_answer
 from tests.entries.test_codes import build_seeded_db
 from tests.entries.test_expand import CODES, TODAY
 
@@ -21,8 +23,16 @@ SAMPLE = "F 250; SWG 340 yd\nX 100\nUBR 180 12/11 airport"
 
 
 def review(text: str, today: date = TODAY) -> list[Reviewed]:
-    """What /entries/expand-all showed the user."""
-    results = expand_all(text, today, CODES)
+    """What /entries/expand-all showed the user, for a text box in code form only."""
+    planned = plan_all(text, today, CODES)
+    assert isinstance(planned, list)
+    assert all(isinstance(item, EntryResult) for item in planned)
+    return [as_reviewed(item) for item in planned if isinstance(item, EntryResult)]
+
+
+async def review_with_ai(text: str, reader: FakeReader, today: date = TODAY) -> list[Reviewed]:
+    """What /entries/expand-all showed the user, with plain-words lines read by the (fake) AI."""
+    results = await expand_all(text, today, CODES, reader)
     assert isinstance(results, list)
     return [as_reviewed(item) for item in results]
 
@@ -134,6 +144,75 @@ async def test_a_user_with_no_users_row_is_refused(database):
     with pytest.raises(UnknownUser):
         await save(database, "F 250", review("F 250"), user="33333333-3333-3333-3333-333333333333")
     assert await rows(database, "33333333-3333-3333-3333-333333333333") == []
+
+
+# REQ-438 q4 / WI-066: plain-words lines are saved exactly as reviewed, without asking the AI again
+AI_TEXT = f"F 250\n{SENTENCE}"
+
+
+async def test_an_ai_read_line_is_saved_as_reviewed_without_asking_the_ai_again(database):
+    reviewed = await review_with_ai(AI_TEXT, FakeReader({SENTENCE: zomato_answer()}))
+    outcome = await save(database, AI_TEXT, reviewed)
+    assert isinstance(outcome, Saved) and len(outcome.ids) == 2 and outcome.failed == []
+    assert await rows(database) == [
+        ("F 250", None, "F", 25000, "2026-11-12", None),
+        (SENTENCE, "ZMT", "F", 45000, "2026-11-11", "dinner"),
+    ]
+
+
+async def test_an_ai_read_category_entry_is_saved_without_a_merchant(database):
+    answer = zomato_answer(merchant_code=None, category_code="F", note="groceries")
+    reviewed = await review_with_ai(SENTENCE, FakeReader({SENTENCE: answer}))
+    assert isinstance(await save(database, SENTENCE, reviewed), Saved)
+    assert await rows(database) == [(SENTENCE, None, "F", 45000, "2026-11-11", "groceries")]
+
+
+async def test_an_ai_failure_the_user_saw_is_not_saved_and_the_rest_is(database):
+    reviewed = await review_with_ai(AI_TEXT, FakeReader({SENTENCE: AiFailure.UNAVAILABLE}))
+    outcome = await save(database, AI_TEXT, reviewed)
+    assert isinstance(outcome, Saved) and len(outcome.ids) == 1
+    assert [(f.typed, f.result.message, f.ai) for f in outcome.failed] == [(SENTENCE, AI_UNAVAILABLE, True)]
+    assert [r[0] for r in await rows(database)] == ["F 250"]
+
+
+async def test_the_sixth_plain_words_line_is_not_saved(database):
+    lines = [f"paid {n} for tea" for n in range(1, 7)]
+    answers = {
+        line: zomato_answer(amount=str(n), merchant_code=None, category_code="F", note="tea")
+        for n, line in enumerate(lines, start=1)
+    }
+    text = "\n".join(lines)
+    outcome = await save(database, text, await review_with_ai(text, FakeReader(answers)))
+    assert isinstance(outcome, Saved) and len(outcome.ids) == 5
+    assert [(f.typed, f.result.message) for f in outcome.failed] == [(lines[5], TOO_MANY_PLAIN)]
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        lambda r: [r[0], replace(r[1], amount_paise=0)],
+        lambda r: [r[0], replace(r[1], date=date(2026, 11, 13))],  # now in the future
+        lambda r: [r[0], replace(r[1], date=date(2025, 12, 31))],  # before 1 January
+        lambda r: [r[0], replace(r[1], code="DOM")],  # a merchant not in the table
+        lambda r: [r[0], replace(r[1], category="Travel")],  # not the merchant's category
+        lambda r: [r[0], replace(r[1], merchant="Swiggy")],  # not the code's merchant
+        lambda r: [r[0], replace(r[1], code=None)],
+        lambda r: [r[0], replace(r[1], ai=False)],  # an AI line passed off as a rules line
+        lambda r: [replace(r[0], ai=True), r[1]],  # a rules line passed off as an AI line
+        lambda r: [r[0], replace(r[1], typed="paid 4500 to zomato")],
+    ],
+)
+async def test_an_ai_review_that_does_not_hold_saves_nothing(database, change):
+    reviewed = await review_with_ai(AI_TEXT, FakeReader({SENTENCE: zomato_answer()}))
+    assert await save(database, AI_TEXT, change(reviewed)) == Refused(REVIEW_CHANGED)
+    assert await rows(database) == []
+
+
+async def test_an_ai_read_line_reviewed_yesterday_is_checked_against_today(database):
+    reviewed = await review_with_ai(
+        SENTENCE, FakeReader({SENTENCE: zomato_answer(date="2026-01-01")}), today=date(2026, 12, 31)
+    )
+    assert await save(database, SENTENCE, reviewed, today=date(2027, 1, 1)) == Refused(REVIEW_CHANGED)
 
 
 # The migration's constraints (foreign keys on, as on every app connection)

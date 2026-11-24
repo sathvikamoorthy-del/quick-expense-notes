@@ -211,6 +211,11 @@ export interface components {
         };
         /** ExpandResult */
         ExpandResult: {
+            /**
+             * Ai
+             * @description true for a plain-words line read with AI help (shown marked AI); absent means false.
+             */
+            ai?: boolean | null;
             entry?: components["schemas"]["ExpandedEntry"] | null;
             /** Error */
             error?: string | null;
@@ -325,6 +330,11 @@ export interface components {
              * Format: date
              */
             date: string;
+            /**
+             * Edit Text
+             * @description The pre-fill of an edit: `typed`, or for a plain-words entry its short code form, e.g. `ZMT 450 11/11 dinner`.
+             */
+            edit_text: string;
             /** Id */
             id: string;
             /** Merchant */
@@ -333,7 +343,7 @@ export interface components {
             note: string | null;
             /**
              * Typed
-             * @description The short entry as typed, e.g. `SWG 340 yd`: the pre-fill of an edit.
+             * @description The entry as typed, e.g. `SWG 340 yd` or a plain-words sentence.
              */
             typed: string;
         };

@@ -4,7 +4,7 @@
 // shows the results.
 import React, { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import { Box, Button, HStack, Link, Table, Tbody, Td, Text, Textarea, Th, Thead, Tr, VStack } from '@chakra-ui/react';
+import { Badge, Box, Button, HStack, Link, Table, Tbody, Td, Text, Textarea, Th, Thead, Tr, VStack } from '@chakra-ui/react';
 import { api } from '../api/client';
 import { type ApiClient, type ExpandResult, saveEntries, useExpandAll } from './useExpand';
 
@@ -27,7 +27,11 @@ function ResultRow({ index, result }: { index: number; result: ExpandResult }) {
   return (
     <Tr>
       <Td isNumeric>{index}</Td>
-      <Td fontFamily="mono">{result.typed}</Td>
+      <Td fontFamily="mono">
+        {result.typed}
+        {/* REQ-438 q3: a plain-words line read with AI help, not by the rules */}
+        {result.ai && <Badge ml={2} colorScheme="purple" title="Read with AI help">AI</Badge>}
+      </Td>
       {result.ok && entry ? (
         <>
           <Td>{entry.merchant ?? '-'}</Td>

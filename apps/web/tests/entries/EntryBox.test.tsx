@@ -59,6 +59,28 @@ describe('EntryBox', () => {
     expect(f.calls).toEqual([['/entries/expand-all', { body: { text: SAMPLE } }]]);
   });
 
+  it('marks a plain-words line read with AI help, and only that line (REQ-438 q3)', async () => {
+    const sentence = 'paid 450 to zomato yesterday for dinner';
+    const reply = {
+      ok: true,
+      error: null,
+      results: [
+        { typed: 'F 250', ok: true, entry: entry('F', null, 'Food', '250.00', '2026-11-12'), error: null, ai: false },
+        { typed: sentence, ok: true, entry: entry('ZMT', 'Zomato', 'Food', '450.00', '2026-11-11', 'dinner'), error: null, ai: true },
+        { typed: 'spent on stuff', ok: false, entry: null, error: 'The AI could not read this line. Type it in code form.', ai: true },
+      ],
+    };
+    renderApp(<EntryBox client={answering({ data: reply, response: { status: 200 } }).client} />);
+    expand(`F 250\n${sentence}\nspent on stuff`);
+    const table = await screen.findByRole('table', { name: 'Expanded entries' });
+    expect(within(table).getAllByRole('row').slice(1).map((row) => row.textContent)).toEqual([
+      '1F 250-Food250.0012 Nov 2026',
+      `2${sentence}AIZomatoFood450.0011 Nov 2026dinner`,
+      '3spent on stuffAIError: The AI could not read this line. Type it in code form.',
+    ]);
+    expect(within(table).getAllByTitle('Read with AI help')).toHaveLength(2);
+  });
+
   it('does not send anything before Expand is pressed', async () => {
     const f = answering({ data: SAMPLE_REPLY, response: { status: 200 } });
     renderApp(<EntryBox client={f.client} />);

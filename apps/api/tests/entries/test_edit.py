@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from app.db.session import Database
-from app.entries.edit import ONE_ENTRY_ONLY, Refused, delete_entry, edit_entry, list_month, saved_day
+from app.entries.edit import ONE_ENTRY_ONLY, Refused, delete_entry, edit_entry, edit_text, list_month, saved_day
 from app.entries.summary import monthly_summary, parse_month
 from tests.entries.test_codes import build_seeded_db
 from tests.entries.test_expand import CODES, TODAY
@@ -232,3 +232,32 @@ async def test_deleting_the_only_entertainment_entry_removes_it_from_the_summary
     assert await summary() == (["Food", "Travel", "Entertainment"], 116900)
     await delete(database, ident(5))
     assert await summary() == (["Food", "Travel"], 52000)
+
+
+# REQ-438 q5 / WI-066: an entry read with AI help is edited in its short code form
+AI_SENTENCE = "paid 450 to zomato yesterday for dinner"
+
+
+async def test_edit_text_is_the_typed_entry_or_the_short_code_form_of_a_plain_words_entry(database, db_file):
+    insert(
+        db_file,
+        [
+            (ident(1), "SWG 340 yd", "SWG", "F", 34000, "2026-11-11", None, SAVED_12_NOV),
+            (ident(2), AI_SENTENCE, "ZMT", "F", 45000, "2026-11-11", "dinner", SAVED_12_NOV),
+            (ident(3), "spent 799.50 on shoes", None, "S", 79950, "2026-01-05", None, SAVED_12_NOV),
+        ],
+    )
+    async with database.sessions() as session:
+        rows = {row.id: row for row in await list_month(session, ASHA, date(2026, 1, 1), date(2026, 12, 1))}
+    assert edit_text(rows[ident(1)]) == "SWG 340 yd"
+    assert edit_text(rows[ident(2)]) == "ZMT 450 11/11 dinner"
+    assert edit_text(rows[ident(3)]) == "S 799.50 5/1"
+
+
+async def test_saving_the_edit_text_of_a_plain_words_entry_keeps_its_values(database, db_file):
+    insert(db_file, [(ident(2), AI_SENTENCE, "ZMT", "F", 45000, "2026-11-11", "dinner", SAVED_12_NOV)])
+    async with database.sessions() as session:
+        row = await edit_entry(session, ASHA, ident(2), "ZMT 450 11/11 dinner", TODAY, CODES)
+        await session.commit()
+    assert not isinstance(row, Refused) and row is not None
+    assert stored(db_file, ident(2))[:6] == ("ZMT 450 11/11 dinner", "ZMT", "F", 45000, "2026-11-11", "dinner")
