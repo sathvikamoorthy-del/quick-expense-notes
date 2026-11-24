@@ -144,3 +144,13 @@ async def test_an_ai_failure_stops_only_that_line(failure, message):
     assert isinstance(out, list)
     assert out[1] == EntryResult(typed=SENTENCE, result=EntryError(message), ai=True)
     assert isinstance(out[0].result, Expanded) and isinstance(out[2].result, Expanded)
+
+
+async def test_a_reader_that_raises_stops_only_that_line_with_the_unavailable_message():
+    class Broken:
+        async def read(self, line, today, codes):
+            raise RuntimeError("boom")
+
+    out = await expand_all(f"F 250\n{SENTENCE}", TODAY, CODES, Broken())
+    assert isinstance(out, list) and isinstance(out[0].result, Expanded)
+    assert out[1] == EntryResult(typed=SENTENCE, result=EntryError(AI_UNAVAILABLE), ai=True)

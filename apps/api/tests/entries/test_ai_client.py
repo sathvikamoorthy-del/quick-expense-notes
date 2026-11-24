@@ -1,5 +1,10 @@
 """REQ-438 / WI-066: the Claude API call, with a fake AsyncAnthropic (no test calls the real API)."""
 
+import json
+import subprocess
+import sys
+import textwrap
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -14,6 +19,8 @@ from tests.entries.test_ai_read import SENTENCE, zomato_answer
 from tests.entries.test_expand import CODES, TODAY
 
 REQUEST = httpx2.Request("POST", "https://api.anthropic.com/v1/messages")
+API_DIR = Path(__file__).resolve().parents[2]
+USER = "11111111-1111-1111-1111-111111111111"
 
 
 class FakeMessages:
@@ -110,13 +117,93 @@ async def test_an_answer_that_cannot_be_used_is_unreadable(outcome):
     assert await reader.read(SENTENCE, TODAY, CODES) is AiFailure.UNREADABLE
 
 
-async def test_without_any_credentials_the_ai_is_unavailable(monkeypatch):
-    for name in ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_PROFILE", "ANTHROPIC_FEDERATION_RULE_ID"):
+CREDENTIAL_VARIABLES = (
+    "ANTHROPIC_API_KEY",
+    "ANTHROPIC_AUTH_TOKEN",
+    "ANTHROPIC_PROFILE",
+    "ANTHROPIC_FEDERATION_RULE_ID",
+)
+
+
+def no_credentials(monkeypatch) -> AiSettings:
+    for name in CREDENTIAL_VARIABLES:
         monkeypatch.delenv(name, raising=False)
-    monkeypatch.setenv("ANTHROPIC_CONFIG_DIR", "Z:/no-such-dir")
-    monkeypatch.setenv("ANTHROPIC_BASE_URL", "http://127.0.0.1:9")  # never the real API, even if credentials exist
-    reader = ClaudeReader(AiSettings(ai_max_retries=0, ai_timeout_seconds=2))
+    return AiSettings(_env_file=None, anthropic_api_key=None)  # type: ignore[call-arg]
+
+
+async def test_without_an_api_key_the_ai_is_unavailable_and_the_sdk_is_not_called(monkeypatch):
+    reader = ClaudeReader(no_credentials(monkeypatch))
+    assert not reader.has_credentials()
     assert await reader.read(SENTENCE, TODAY, CODES) is AiFailure.UNAVAILABLE
+    assert reader._client is None
+
+
+@pytest.mark.parametrize("key", ["", "   "])
+async def test_an_empty_api_key_counts_as_none(monkeypatch, key):
+    no_credentials(monkeypatch)
+    reader = ClaudeReader(AiSettings(_env_file=None, anthropic_api_key=key))  # type: ignore[call-arg]
+    assert await reader.read(SENTENCE, TODAY, CODES) is AiFailure.UNAVAILABLE
+
+
+async def test_an_api_key_in_the_environment_counts_as_credentials(monkeypatch):
+    no_credentials(monkeypatch)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "env-key")
+    assert ClaudeReader(AiSettings(_env_file=None)).has_credentials()  # type: ignore[call-arg]
+
+
+async def test_without_the_anthropic_package_the_ai_is_unavailable(monkeypatch):
+    monkeypatch.setitem(sys.modules, "anthropic", None)  # `import anthropic` now raises ImportError
+    reader = ClaudeReader(AiSettings(_env_file=None, anthropic_api_key="test-key"))  # type: ignore[call-arg]
+    assert await reader.read(SENTENCE, TODAY, CODES) is AiFailure.UNAVAILABLE
+
+
+async def test_the_sdk_refusing_to_authenticate_is_unavailable():
+    # anthropic 2.x raises a plain TypeError ("Could not resolve authentication method") when building the request
+    reader, _ = reader_for(TypeError("Could not resolve authentication method."))
+    assert await reader.read(SENTENCE, TODAY, CODES) is AiFailure.UNAVAILABLE
+
+
+def test_the_api_starts_and_answers_without_the_anthropic_package(tmp_path):
+    """The whole scenario in a fresh interpreter where `import anthropic` fails: the API still starts, code-form
+    entries expand, and a plain-words line gets the unavailable message (not a 500)."""
+    script = textwrap.dedent(
+        f"""
+        import sys
+        sys.modules["anthropic"] = None
+        import json, os, time
+        from datetime import date
+        import jwt
+        os.environ["JWT_SECRET"] = "s" * 40
+        os.environ["DATABASE_URL"] = "file:{(tmp_path / "app.db").as_posix()}"
+        os.environ["ANTHROPIC_API_KEY"] = "test-key"
+        import app.entries.routes as routes
+        routes.today_ist = lambda: date(2026, 11, 12)
+        from app.http.app import create_app
+        from app.http.settings import Settings
+        from tests.entries.test_codes import build_seeded_db
+        from tests.helpers import client_for
+        build_seeded_db(__import__("pathlib").Path("{tmp_path.as_posix()}"), users=("{USER}",))
+        token = jwt.encode({{"sub": "{USER}", "exp": int(time.time()) + 60}}, "s" * 40, algorithm="HS256")
+        with client_for(create_app(settings=Settings(env="development"))) as client:
+            response = client.post(
+                "/entries/expand-all",
+                json={{"text": "F 250\\n{SENTENCE}"}},
+                headers={{"Authorization": "Bearer " + token}},
+            )
+        print(json.dumps({{"status": response.status_code, "body": response.json()}}))
+        """
+    )
+    done = subprocess.run(
+        [sys.executable, "-c", script], cwd=API_DIR, capture_output=True, text=True, timeout=120, check=False
+    )
+    assert done.returncode == 0, done.stderr
+    answer = json.loads(done.stdout.strip().splitlines()[-1])
+    assert answer["status"] == 200
+    results = answer["body"]["results"]
+    assert [(r["typed"], r["ok"], r["error"]) for r in results] == [
+        ("F 250", True, None),
+        (SENTENCE, False, "AI help is not available right now. Type the entry in code form or try again."),
+    ]
 
 
 def test_the_api_key_setting_is_passed_to_the_client_and_one_reader_is_kept():

@@ -480,3 +480,27 @@ def test_the_list_gives_the_edit_text_and_an_edit_with_it_keeps_the_values(ai_cl
         "date": "2026-11-11",
         "note": "dinner",
     }
+
+
+def test_a_plain_words_line_without_an_api_key_gets_the_unavailable_message(db_file, monkeypatch):
+    """The real ClaudeReader with no key anywhere: 200 with the message on that line, never a 500."""
+    from app.entries.ai_client import ClaudeReader, get_ai_reader
+    from app.entries.ai_settings import AiSettings
+
+    for name in ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_PROFILE", "ANTHROPIC_FEDERATION_RULE_ID"):
+        monkeypatch.delenv(name, raising=False)
+    clear_codes_cache()
+    monkeypatch.setenv("JWT_SECRET", SECRET)
+    monkeypatch.setenv("DATABASE_URL", f"file:{db_file}")
+    monkeypatch.setattr("app.entries.routes.today_ist", lambda: date(2026, 11, 12))
+    app = create_app(settings=Settings(env="development"))
+    reader = ClaudeReader(AiSettings(_env_file=None, anthropic_api_key=None))  # type: ignore[call-arg]
+    app.dependency_overrides[get_ai_reader] = lambda: reader
+    with client_for(app) as test_client:
+        response = test_client.post("/entries/expand-all", json={"text": f"F 250\n{AI_SENTENCE}"}, headers=bearer())
+    clear_codes_cache()
+    assert response.status_code == 200
+    assert [(r["typed"], r["ok"], r["error"], r["ai"]) for r in response.json()["results"]] == [
+        ("F 250", True, None, False),
+        (AI_SENTENCE, False, "AI help is not available right now. Type the entry in code form or try again.", True),
+    ]

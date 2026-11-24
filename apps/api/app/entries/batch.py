@@ -10,6 +10,7 @@ Rules (docs/workitems/WI-047/impl.md, product owner 22 Nov 2026; docs/workitems/
 """
 
 import asyncio
+import logging
 import re
 from dataclasses import dataclass
 from datetime import date
@@ -24,6 +25,8 @@ from app.entries.ai_read import (
     is_code_form,
 )
 from app.entries.expand import CodeInfo, EntryError, Expanded, expand
+
+log = logging.getLogger(__name__)
 
 MAX_ENTRIES = 20
 TOO_MANY_ENTRIES = f"Too many entries (max {MAX_ENTRIES})."
@@ -77,7 +80,12 @@ def plan_all(text: str, today: date, codes: dict[str, CodeInfo]) -> list[EntryRe
 
 
 async def read_line(reader: AiReader, line: str, today: date, codes: dict[str, CodeInfo]) -> Expanded | EntryError:
-    answer = await reader.read(line, today, codes)
+    """An AI failure, or anything the reader raises, stops only this line with the unavailable message."""
+    try:
+        answer = await reader.read(line, today, codes)
+    except Exception:
+        log.exception("AI reader raised; the line is shown as unavailable")
+        answer = AiFailure.UNAVAILABLE
     if isinstance(answer, AiFailure):
         return EntryError(failure_message(answer))
     return check_answer(answer, today, codes)

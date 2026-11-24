@@ -2,20 +2,35 @@
 
 Only the typed line, today's date and the category and merchant tables are sent (REQ-438 q6): no user id, name,
 email or other entries. Every failure becomes an AiFailure for that line; nothing here raises to the route.
+
+The `anthropic` package is imported only when a line is read, so the API starts and code-form entries work even when
+the package is not installed; plain-words lines then get the unavailable message, as they do without an API key.
 """
 
 import logging
+import os
 from datetime import date
 from functools import lru_cache
+from typing import TYPE_CHECKING
 
-import anthropic
 from pydantic import ValidationError
 
 from app.entries.ai_read import AiAnswer, AiFailure
 from app.entries.ai_settings import AiSettings, get_ai_settings
 from app.entries.expand import CodeInfo
 
+if TYPE_CHECKING:
+    import anthropic
+
 log = logging.getLogger(__name__)
+
+# Environment variables through which the SDK can find credentials besides ANTHROPIC_API_KEY.
+_CREDENTIAL_VARIABLES = (
+    "ANTHROPIC_API_KEY",
+    "ANTHROPIC_AUTH_TOKEN",
+    "ANTHROPIC_PROFILE",
+    "ANTHROPIC_FEDERATION_RULE_ID",
+)
 
 _INSTRUCTIONS = """You read one expense that a user typed in plain words and return it as structured data.
 
@@ -50,23 +65,42 @@ def user_message(line: str, today: date) -> str:
 class ClaudeReader:
     """Reads a line with the Claude API (model from ANTHROPIC_MODEL, default Claude Haiku 5.5)."""
 
-    def __init__(self, settings: AiSettings, client: anthropic.AsyncAnthropic | None = None) -> None:
+    def __init__(self, settings: AiSettings, client: "anthropic.AsyncAnthropic | None" = None) -> None:
         self._settings = settings
         self._client = client
 
-    def _get_client(self) -> anthropic.AsyncAnthropic:
+    def _key(self) -> str | None:
+        key = self._settings.anthropic_api_key
+        value = key.get_secret_value().strip() if key else ""
+        return value or None
+
+    def has_credentials(self) -> bool:
+        """A key in the settings (or .env), or one of the SDK's credential variables in the environment."""
+        return self._key() is not None or any(os.environ.get(name, "").strip() for name in _CREDENTIAL_VARIABLES)
+
+    def _get_client(self) -> "anthropic.AsyncAnthropic":
         if self._client is None:
-            key = self._settings.anthropic_api_key
+            import anthropic  # here, not at the top: a missing package must not stop the API (ImportError is caught)
+
             self._client = anthropic.AsyncAnthropic(
-                api_key=key.get_secret_value() if key else None,
+                api_key=self._key(),
                 timeout=self._settings.ai_timeout_seconds,
                 max_retries=self._settings.ai_max_retries,
             )
         return self._client
 
     async def read(self, line: str, today: date, codes: dict[str, CodeInfo]) -> AiAnswer | AiFailure:
+        if self._client is None and not self.has_credentials():
+            log.warning("AI read skipped (unavailable): no ANTHROPIC_API_KEY or other credentials configured")
+            return AiFailure.UNAVAILABLE
         try:
-            response = await self._get_client().messages.parse(
+            client = self._get_client()
+            import anthropic
+        except Exception as error:  # ImportError when the package is missing, or the SDK refused to build a client
+            return self._failed(AiFailure.UNAVAILABLE, error)
+
+        try:
+            response = await client.messages.parse(
                 model=self._settings.anthropic_model,
                 max_tokens=1024,
                 output_config={"effort": "low"},
@@ -80,10 +114,12 @@ class ClaudeReader:
             return self._failed(AiFailure.UNAVAILABLE, error)
         except anthropic.APIConnectionError as error:  # network errors and timeouts
             return self._failed(AiFailure.UNAVAILABLE, error)
-        except anthropic.AnthropicError as error:  # e.g. no credentials configured
+        except anthropic.AnthropicError as error:  # e.g. credentials the SDK cannot use
             return self._failed(AiFailure.UNAVAILABLE, error)
         except (ValidationError, ValueError) as error:  # an answer that does not fit AiAnswer
             return self._failed(AiFailure.UNREADABLE, error)
+        except Exception as error:  # anything else the SDK raises (e.g. TypeError for unresolved authentication)
+            return self._failed(AiFailure.UNAVAILABLE, error)
         if response.stop_reason in ("refusal", "max_tokens") or response.parsed_output is None:
             log.warning("AI answer not usable: stop_reason=%s", response.stop_reason)
             return AiFailure.UNREADABLE
